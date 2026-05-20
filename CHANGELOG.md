@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Click popup on panel smiley (toggle open/close with greeting text)
 - COSMIC panel applet using `libcosmic` (smiley `😀` on the panel)
 - Desktop entry and AppStream metainfo for **Add widget** in COSMIC settings
 - `scripts/install-local.sh` for `~/.local` installation

@@ -9,15 +9,26 @@
       "command": "cargo run",
       "path": "",
       "port": 0
+    },
+    {
+      "id": "install-local",
+      "label": "Install locally",
+      "command": "bash scripts/install-local.sh",
+      "path": "",
+      "port": 0
     }
   ],
   "devManager.quality.profile": "strict",
   "devManager.quality.degradedStrict": true,
   "devManager.quality.customChecks": [
-    { "label": "cargo fmt", "script": "cargo fmt --check", "type": "command" },
-    { "label": "cargo check", "script": "cargo check", "type": "command" },
-    { "label": "cargo clippy", "script": "cargo clippy -- -D warnings", "type": "command" },
-    { "label": "cargo test", "script": "cargo test", "type": "command" },
+    {
+      "label": "install locally",
+      "script": "bash scripts/install-local.sh",
+      "type": "command"
+    },
+    { "label": "cargo fmt", "script": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo fmt --check'", "type": "command" },
+    { "label": "cargo verify", "script": "bash scripts/cargo-precommit.sh", "type": "command" },
+    { "label": "cargo clippy", "script": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo clippy --all-features --locked -- -D warnings'", "type": "command" },
     { "label": "cargo audit", "script": "cargo audit", "type": "command" }
   ],
   "devManager.quality.skipDirs": ["target"],
@@ -31,28 +42,21 @@
       "id": "cargo-fmt",
       "label": "cargo fmt",
       "kind": "command",
-      "command": "cargo fmt --check",
+      "command": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo fmt --check'",
       "severity": "error"
     },
     {
-      "id": "cargo-check",
-      "label": "cargo check",
+      "id": "cargo-verify",
+      "label": "cargo verify",
       "kind": "command",
-      "command": "cargo check",
+      "command": "bash scripts/cargo-precommit.sh",
       "severity": "error"
     },
     {
       "id": "cargo-clippy",
       "label": "cargo clippy",
       "kind": "command",
-      "command": "cargo clippy -- -D warnings",
-      "severity": "error"
-    },
-    {
-      "id": "cargo-test",
-      "label": "cargo test",
-      "kind": "command",
-      "command": "cargo test",
+      "command": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo clippy --all-features --locked -- -D warnings'",
       "severity": "error"
     },
     {

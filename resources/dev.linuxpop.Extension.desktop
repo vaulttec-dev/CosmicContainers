@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=Linux Pop Extension
 Name[uk]=Linux Pop Extension
-Comment=Simple panel widget (smiley starter)
-Comment[uk]=Простий віджет панелі (смайлик для початку)
+Comment=Panel widget with smiley and click popup
+Comment[uk]=Віджет панелі зі смайликом і popup по кліку
 Type=Application
 Icon=dev.linuxpop.Extension
 Exec=linux-pop-extension
