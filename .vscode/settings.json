@@ -12,17 +12,31 @@
     }
   ],
   "devManager.quality.profile": "strict",
+  "devManager.quality.customChecks": [
+    { "label": "cargo fmt", "script": "cargo fmt --check", "type": "command" },
+    { "label": "cargo check", "script": "cargo check", "type": "command" },
+    { "label": "cargo clippy", "script": "cargo clippy -- -D warnings", "type": "command" },
+    { "label": "cargo test", "script": "cargo test", "type": "command" }
+  ],
   "devManager.quality.skipDirs": ["target"],
   "devManager.git.defaultBranch": "master",
   "devManager.ci.workflowsPath": ".github/workflows",
   "devManager.realtime.enabled": false,
   "devManager.realtime.precommit.mode": "block",
+  "devManager.realtime.precommit.sendFailToChat": true,
   "devManager.realtime.precommit.customChecks": [
     {
       "id": "cargo-fmt",
       "label": "cargo fmt",
       "kind": "command",
       "command": "cargo fmt --check",
+      "severity": "error"
+    },
+    {
+      "id": "cargo-check",
+      "label": "cargo check",
+      "kind": "command",
+      "command": "cargo check",
       "severity": "error"
     },
     {
@@ -38,10 +52,42 @@
       "kind": "command",
       "command": "cargo test",
       "severity": "error"
+    },
+    {
+      "id": "no-todo-rust",
+      "label": "No TODO/FIXME in staged Rust",
+      "kind": "pattern",
+      "pattern": "TODO|FIXME|XXX|HACK|UNSAFE",
+      "filePattern": "src/**/*.rs",
+      "scope": "diff",
+      "severity": "warn"
+    },
+    {
+      "id": "no-debug-print",
+      "label": "No dbg!/todo! in staged Rust",
+      "kind": "pattern",
+      "pattern": "dbg!\\(|todo!\\(|unimplemented!\\(",
+      "filePattern": "src/**/*.rs",
+      "scope": "diff",
+      "severity": "error"
     }
   ],
   "devManager.quality.builtin.cargoToml.enabled": true,
   "devManager.quality.builtin.cargoToml.precommit": true,
+  "devManager.quality.builtin.lockfileSync.enabled": true,
+  "devManager.quality.builtin.lockfileSync.precommit": true,
+  "devManager.quality.builtin.secretLeaks.enabled": true,
+  "devManager.quality.builtin.secretLeaks.precommit": true,
+  "devManager.quality.builtin.gitignoreCheck.enabled": true,
+  "devManager.quality.builtin.gitignoreCheck.precommit": true,
+  "devManager.quality.builtin.debugLeaks.enabled": true,
+  "devManager.quality.builtin.debugLeaks.precommit": true,
+  "devManager.quality.builtin.trojanSource.enabled": true,
+  "devManager.quality.builtin.trojanSource.precommit": true,
+  "devManager.quality.builtin.shellcheck.enabled": true,
+  "devManager.quality.builtin.shellcheck.precommit": true,
+  "devManager.quality.builtin.commentedCode.enabled": true,
+  "devManager.quality.builtin.commentedCode.precommit": true,
   "devManager.quality.builtin.trivy.enabled": false,
   "devManager.quality.semgrep.config": "auto",
   "devManager.team.enabled": false,
