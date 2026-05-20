@@ -26,11 +26,20 @@ jobs:
         with:
           components: rustfmt, clippy
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            build-essential pkg-config \
+            libxkbcommon-dev libwayland-dev libdbus-1-dev \
+            libpipewire-0.3-dev libpam0g-dev libssl-dev \
+            libegl1-mesa-dev libinput-dev libpulse-dev
+
       - name: Format
-        run: cargo fmt --check
+        run: cargo fmt --all-features --check
 
       - name: Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-features -- -D warnings
 
       - name: Test
-        run: cargo test
+        run: cargo test --lib --no-default-features && cargo test --all-features

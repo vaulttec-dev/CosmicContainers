@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.linuxpop.Extension</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Linux Pop Extension</name>
+  <summary>Simple COSMIC panel widget (smiley starter)</summary>
+  <description>
+    <p>A starter panel applet for Pop!_OS COSMIC that shows a smiley on the panel.</p>
+  </description>
+  <launchable type="desktop-id">dev.linuxpop.Extension.desktop</launchable>
+  <provides>
+    <binary>linux-pop-extension</binary>
+  </provides>
+  <categories>
+    <category>COSMIC</category>
+  </categories>
+  <keywords>
+    <keyword>COSMIC</keyword>
+    <keyword>applet</keyword>
+    <keyword>widget</keyword>
+  </keywords>
+</component>

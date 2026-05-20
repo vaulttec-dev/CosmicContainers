@@ -1,7 +1,5 @@
-use linux_pop_extension::greeting;
-use std::io::{self, Write};
+mod app;
 
-fn main() {
-    let mut stdout = io::stdout().lock();
-    writeln!(stdout, "{}", greeting()).expect("stdout");
+fn main() -> cosmic::iced::Result {
+    cosmic::applet::run::<app::App>(())
 }

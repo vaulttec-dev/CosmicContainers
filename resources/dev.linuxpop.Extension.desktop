@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Linux Pop Extension
+Name[uk]=Linux Pop Extension
+Comment=Simple panel widget (smiley starter)
+Comment[uk]=Простий віджет панелі (смайлик для початку)
+Type=Application
+Icon=dev.linuxpop.Extension
+Exec=linux-pop-extension
+Terminal=false
+StartupNotify=true
+Categories=COSMIC
+Keywords=COSMIC
+NoDisplay=true
+X-CosmicApplet=true

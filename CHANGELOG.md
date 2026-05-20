@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- (nothing yet)
+- COSMIC panel applet using `libcosmic` (smiley `😀` on the panel)
+- Desktop entry and AppStream metainfo for **Add widget** in COSMIC settings
+- `scripts/install-local.sh` for `~/.local` installation
+- Optional `applet` feature so library tests build without GUI system libraries
 
 ## [0.1.0] - 2026-05-20
 

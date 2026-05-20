@@ -1,4 +1,5 @@
 #[test]
-fn project_builds() {
-    assert_eq!(linux_pop_extension::greeting(), "Hello, world!");
+fn project_constants() {
+    assert_eq!(linux_pop_extension::APP_ID, "dev.linuxpop.Extension");
+    assert_eq!(linux_pop_extension::PANEL_EMOJI, "😀");
 }

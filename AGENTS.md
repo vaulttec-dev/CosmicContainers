@@ -10,7 +10,7 @@
 
 ## Overview
 
-Rust binary crate (`linux-pop-extension`). Early stage: single entry point in `src/main.rs`. No `README.md` yet — treat `Cargo.toml` and `src/` as the source of truth for intent.
+Rust crate (`linux-pop-extension`): **COSMIC panel applet** for Pop!_OS via `libcosmic` (`cosmic::applet::run`). Binary requires feature `applet` and system Wayland/GTK-related dev packages. See `README.md` for install and “Add widget” steps.
 
 **Chat language**: Reply to the user in **Ukrainian** unless they ask for another language. Keep code, identifiers, commits, and this file in **English**.
 
@@ -31,8 +31,8 @@ When requirements are unclear, ask once with concrete options rather than guessi
 # Build (debug)
 cargo build
 
-# Run
-cargo run
+# Run applet (COSMIC session, requires system deps + --features applet)
+cargo run --release
 
 # Release build
 cargo build --release
@@ -61,14 +61,18 @@ Prefer `cargo check` for fast feedback during edits; run `cargo build` or `cargo
 
 ```
 linux-pop-extension/
-  AGENTS.md          # This file — global agent instructions
-  Cargo.toml         # Crate manifest
-  src/main.rs        # Application entry point
-  .githooks/         # Git hooks (SnakeFlow pre-commit)
-  .cursor/skills/    # Cursor skills (e.g. setup-dev-manager)
+  AGENTS.md              # This file
+  Cargo.toml             # `applet` feature → libcosmic
+  src/lib.rs             # APP_ID, PANEL_EMOJI (unit tests)
+  src/main.rs            # cosmic::applet::run
+  src/app.rs             # Application impl (panel view)
+  resources/             # .desktop, metainfo, icon
+  scripts/install-local.sh
+  .githooks/
+  .cursor/skills/
 ```
 
-Add new modules under `src/` as the project grows (`src/lib.rs` only if the crate becomes a library + binary). If the project grows into a library, CLI, or desktop integration, update this file with the chosen architecture and public API boundaries.
+Panel UI lives in `src/app.rs`; shared constants in `src/lib.rs`. Register applets with `X-CosmicApplet=true` in `resources/*.desktop`.
 
 ## Testing
 
