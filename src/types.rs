@@ -13,13 +13,9 @@ pub const STANDALONE_GROUP: &str = "Standalone";
 /// Auto-refresh interval for panel and popup lists.
 pub const POLL_INTERVAL_SECS: u64 = 5;
 
-/// Pop/COSMIC symbolic icon names for container actions.
+/// Pop/COSMIC symbolic icon names (collapse + refresh toolbar).
 pub mod icons {
-    pub const START: &str = "media-playback-start-symbolic";
-    pub const STOP: &str = "media-playback-stop-symbolic";
-    pub const RESTART: &str = "system-reboot-symbolic";
     pub const REFRESH: &str = "view-refresh-symbolic";
-    pub const DELETE: &str = "user-trash-symbolic";
     pub const EXPAND: &str = "pan-end-symbolic";
     pub const COLLAPSE: &str = "pan-down-symbolic";
 }

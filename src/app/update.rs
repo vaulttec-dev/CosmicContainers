@@ -1,10 +1,10 @@
 use cosmic::app::Task;
 use cosmic::surface::action::{app_popup, destroy_popup};
 use linux_pop_extension::PopupTab;
-use linux_pop_extension::services::docker;
+use linux_pop_extension::services::{docker, images, volumes};
 
 use super::popup::popup_view;
-use super::{App, Message, POPUP_HEIGHT, POPUP_WIDTH};
+use super::{App, Message, POPUP_HEIGHT, POPUP_WIDTH, PendingRemove};
 
 impl App {
     pub(super) fn handle_message(&mut self, message: Message) -> Task<Message> {
@@ -16,7 +16,7 @@ impl App {
             Message::TabSelected(tab) => self.select_tab(tab),
             Message::ToggleRunningOnly => self.toggle_running_filter(),
             Message::ToggleGroupCollapse(project) => self.toggle_group_collapse(project),
-            Message::RequestRemove(name) => self.request_remove(name),
+            Message::RequestRemove(target) => self.request_remove(target),
             Message::CancelRemove => self.cancel_remove(),
             Message::ConfirmRemove => self.confirm_remove(),
             Message::ContainersLoaded { result, silent } => {
@@ -97,6 +97,7 @@ impl App {
         self.active_tab = tab;
         self.loading = true;
         self.error = None;
+        self.pending_remove = None;
         self.fetch_active_tab(false)
     }
 
@@ -115,8 +116,8 @@ impl App {
         Task::none()
     }
 
-    fn request_remove(&mut self, name: String) -> Task<Message> {
-        self.pending_remove = Some(name);
+    fn request_remove(&mut self, target: PendingRemove) -> Task<Message> {
+        self.pending_remove = Some(target);
         Task::none()
     }
 
@@ -126,16 +127,19 @@ impl App {
     }
 
     fn confirm_remove(&mut self) -> Task<Message> {
-        let Some(name) = self.pending_remove.take() else {
+        let Some(target) = self.pending_remove.take() else {
             return Task::none();
         };
         self.loading = true;
-        Task::perform(docker::remove_then_list(name), |result| {
-            cosmic::Action::App(Message::ContainersLoaded {
-                result,
-                silent: false,
-            })
-        })
+        match target {
+            PendingRemove::Container(name) => {
+                Task::perform(docker::remove_then_list(name), containers_loaded)
+            }
+            PendingRemove::Image(id) => Task::perform(images::remove_then_list(id), images_loaded),
+            PendingRemove::Volume(name) => {
+                Task::perform(volumes::remove_then_list(name), volumes_loaded)
+            }
+        }
     }
 
     fn run_container_action(
@@ -181,6 +185,24 @@ fn containers_loaded(
     result: Result<Vec<linux_pop_extension::ContainerSummary>, String>,
 ) -> cosmic::Action<Message> {
     cosmic::Action::App(Message::ContainersLoaded {
+        result,
+        silent: false,
+    })
+}
+
+fn images_loaded(
+    result: Result<Vec<linux_pop_extension::ImageSummary>, String>,
+) -> cosmic::Action<Message> {
+    cosmic::Action::App(Message::ImagesLoaded {
+        result,
+        silent: false,
+    })
+}
+
+fn volumes_loaded(
+    result: Result<Vec<linux_pop_extension::VolumeSummary>, String>,
+) -> cosmic::Action<Message> {
+    cosmic::Action::App(Message::VolumesLoaded {
         result,
         silent: false,
     })

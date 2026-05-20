@@ -49,8 +49,8 @@ This installs to `~/.local` (binary, `.desktop`, AppStream metainfo, icon).
 In the popup:
 
 - Tabs: **Containers**, **Images**, **Volumes**
-- **Containers**: grouped by Compose project, filter **Running only**, collapse groups, icon actions (start / stop / restart / remove)
-- **Images** / **Volumes**: list with refresh
+- **Containers**: grouped by Compose project, **hide stopped** filter (hide icon), collapse groups, icon actions (play / stop / reload / delete)
+- **Images** / **Volumes**: list with delete (`docker rmi` / `docker volume rm`) and refresh
 - Auto-refresh every 5 seconds (panel count + open popup)
 
 ## Development

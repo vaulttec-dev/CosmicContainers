@@ -18,6 +18,14 @@ use linux_pop_extension::{
 pub use popup::POPUP_HEIGHT;
 pub use popup::POPUP_WIDTH;
 
+/// Item awaiting delete confirmation in the popup.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PendingRemove {
+    Container(String),
+    Image(String),
+    Volume(String),
+}
+
 /// COSMIC panel applet state.
 #[derive(Default)]
 pub struct App {
@@ -30,7 +38,7 @@ pub struct App {
     pub(super) volume_list: Vec<VolumeSummary>,
     pub(super) running_only: bool,
     pub(super) collapsed_groups: HashSet<String>,
-    pub(super) pending_remove: Option<String>,
+    pub(super) pending_remove: Option<PendingRemove>,
     pub(super) loading: bool,
     pub(super) error: Option<String>,
 }
@@ -45,7 +53,7 @@ pub enum Message {
     TabSelected(PopupTab),
     ToggleRunningOnly,
     ToggleGroupCollapse(String),
-    RequestRemove(String),
+    RequestRemove(PendingRemove),
     ConfirmRemove,
     CancelRemove,
     ContainersLoaded {

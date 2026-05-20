@@ -16,3 +16,18 @@ pub async fn list_images() -> Result<Vec<ImageSummary>, String> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     Ok(parse_images_output(&stdout))
 }
+
+/// Remove an image by ID or reference (`docker rmi`).
+pub async fn remove_image(id: &str) -> Result<(), String> {
+    let output = run_docker(&["rmi", id]).await?;
+    if output.status.success() {
+        return Ok(());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    Err(format_cli_failure_public(&stderr, "docker rmi failed"))
+}
+
+pub async fn remove_then_list(id: String) -> Result<Vec<ImageSummary>, String> {
+    remove_image(&id).await?;
+    list_images().await
+}

@@ -1,5 +1,6 @@
 //! Core types and Docker CLI helpers for the Cosmic Containers panel applet.
 
+pub mod action_icons;
 pub mod grouping;
 pub mod parse;
 pub mod services;
