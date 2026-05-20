@@ -46,7 +46,12 @@ This installs to `~/.local` (binary, `.desktop`, AppStream metainfo, icon).
 | `N` | `N` containers in `running` state |
 | `!` | Docker error (not installed, daemon down, or permission denied) |
 
-In the popup: **Refresh**, **Play** (start stopped container), **Stop** (stop running container).
+In the popup:
+
+- Tabs: **Containers**, **Images**, **Volumes**
+- **Containers**: grouped by Compose project, filter **Running only**, collapse groups, icon actions (start / stop / restart / remove)
+- **Images** / **Volumes**: list with refresh
+- Auto-refresh every 5 seconds (panel count + open popup)
 
 ## Development
 

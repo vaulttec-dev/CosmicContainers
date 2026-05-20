@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Cosmic Containers**: panel badge with running Docker container count
-- Popup list from `docker ps -a` (async CLI, non-blocking UI)
-- **Play** / **Stop** per container with automatic list refresh
-- Docker error hints (missing CLI, daemon, permission denied)
-- `src/services/docker.rs` and `ContainerSummary` parser with unit tests
+- Popup tabs: **Containers**, **Images**, **Volumes**
+- Compose grouping with **service name**, collapse/expand, **Start/Stop/Restart all** per group
+- Icon actions per container; **remove** stopped containers (with confirm)
+- **Running only** filter; auto-refresh every 5 seconds
+- `src/services/images.rs`, `src/services/volumes.rs`, Docker CLI parsers and unit tests
 
 ### Changed
 
