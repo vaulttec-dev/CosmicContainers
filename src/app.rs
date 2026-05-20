@@ -1,24 +1,62 @@
 use cosmic::app::{Core, Task};
+use cosmic::iced::Length;
+use cosmic::iced::alignment::Alignment;
 use cosmic::iced::theme::Style;
 use cosmic::iced::window;
 use cosmic::iced::window::Id;
 use cosmic::prelude::*;
 use cosmic::surface::action::{app_popup, destroy_popup};
 use cosmic::widget;
-use linux_pop_extension::{PANEL_EMOJI, POPUP_GREETING};
+use linux_pop_extension::services::docker;
+use linux_pop_extension::{ContainerSummary, running_count};
 
 /// COSMIC panel applet state.
 #[derive(Default)]
 pub struct App {
     core: Core,
     popup: Option<Id>,
+    containers: Vec<ContainerSummary>,
+    loading: bool,
+    error: Option<String>,
 }
 
-/// Messages from the panel button and popup lifecycle.
+/// Messages from the panel button, popup, and Docker CLI results.
 #[derive(Clone, Debug)]
 pub enum Message {
     PopupClosed(Id),
     TogglePopup,
+    Refresh,
+    ContainersLoaded(Result<Vec<ContainerSummary>, String>),
+    Start(String),
+    Stop(String),
+}
+
+impl App {
+    fn panel_label(&self) -> String {
+        if self.error.is_some() && self.containers.is_empty() {
+            return "!".to_string();
+        }
+        format!("{}", running_count(&self.containers))
+    }
+
+    fn fetch_containers_task() -> Task<Message> {
+        Task::perform(docker::list_containers(), |result| {
+            cosmic::Action::App(Message::ContainersLoaded(result))
+        })
+    }
+
+    fn apply_loaded(&mut self, result: Result<Vec<ContainerSummary>, String>) {
+        self.loading = false;
+        match result {
+            Ok(containers) => {
+                self.containers = containers;
+                self.error = None;
+            }
+            Err(err) => {
+                self.error = Some(err);
+            }
+        }
+    }
 }
 
 impl cosmic::Application for App {
@@ -37,7 +75,13 @@ impl cosmic::Application for App {
     }
 
     fn init(core: Core, _flags: Self::Flags) -> (Self, Task<Self::Message>) {
-        (Self { core, popup: None }, Task::none())
+        (
+            Self {
+                core,
+                ..Default::default()
+            },
+            Self::fetch_containers_task(),
+        )
     }
 
     fn on_close_requested(&self, id: window::Id) -> Option<Self::Message> {
@@ -57,7 +101,9 @@ impl cosmic::Application for App {
                         cosmic::app::Action::Surface(destroy_popup(id)),
                     ));
                 }
-                return cosmic::task::message(cosmic::Action::Cosmic(
+                self.loading = true;
+                let fetch = Self::fetch_containers_task();
+                let open = cosmic::task::message(cosmic::Action::Cosmic(
                     cosmic::app::Action::Surface(app_popup::<App>(
                         |state: &mut App| {
                             let new_id = Id::unique();
@@ -65,7 +111,7 @@ impl cosmic::Application for App {
                             state.core.applet.get_popup_settings(
                                 state.core.main_window_id().unwrap(),
                                 new_id,
-                                None,
+                                Some((360, 420)),
                                 None,
                                 None,
                             )
@@ -73,13 +119,33 @@ impl cosmic::Application for App {
                         Some(Box::new(popup_view)),
                     )),
                 ));
+                return Task::batch([open, fetch]);
+            }
+            Message::Refresh => {
+                self.loading = true;
+                return Self::fetch_containers_task();
+            }
+            Message::ContainersLoaded(result) => {
+                self.apply_loaded(result);
+            }
+            Message::Start(name) => {
+                self.loading = true;
+                return Task::perform(docker::start_then_list(name), |result| {
+                    cosmic::Action::App(Message::ContainersLoaded(result))
+                });
+            }
+            Message::Stop(name) => {
+                self.loading = true;
+                return Task::perform(docker::stop_then_list(name), |result| {
+                    cosmic::Action::App(Message::ContainersLoaded(result))
+                });
             }
         }
         Task::none()
     }
 
     fn view(&self) -> Element<'_, Self::Message> {
-        widget::button::text(PANEL_EMOJI)
+        widget::button::text(self.panel_label())
             .padding(4)
             .on_press(Message::TogglePopup)
             .into()
@@ -95,12 +161,53 @@ impl cosmic::Application for App {
 }
 
 fn popup_view(state: &App) -> Element<'_, cosmic::Action<Message>> {
-    let content = widget::column![
-        widget::text(PANEL_EMOJI).size(28),
-        widget::text(POPUP_GREETING),
-    ]
-    .spacing(8)
-    .padding(12);
+    let mut content = widget::column![].spacing(6).padding(12);
 
-    Element::from(state.core.applet.popup_container(content)).map(cosmic::Action::App)
+    content = content.push(
+        widget::row![
+            widget::text("Containers").size(18),
+            widget::button::text("Refresh").on_press(Message::Refresh),
+        ]
+        .align_y(Alignment::Center)
+        .spacing(12),
+    );
+
+    if state.loading {
+        content = content.push(widget::text("Loading..."));
+    }
+
+    if let Some(err) = &state.error {
+        content = content.push(widget::text(err).size(12));
+    }
+
+    if state.containers.is_empty() && !state.loading && state.error.is_none() {
+        content = content.push(widget::text("No containers."));
+    }
+
+    for container in &state.containers {
+        let name = container.name.clone();
+        let line = format!("{} — {}", container.name, container.state);
+        let row = if container.is_running() {
+            widget::row![
+                widget::text(line).width(Length::FillPortion(3)),
+                widget::button::text("Stop").on_press(Message::Stop(name)),
+            ]
+        } else {
+            widget::row![
+                widget::text(line).width(Length::FillPortion(3)),
+                widget::button::text("Play").on_press(Message::Start(name)),
+            ]
+        };
+        content = content.push(row.align_y(Alignment::Center).spacing(8));
+    }
+
+    Element::from(
+        state
+            .core
+            .applet
+            .popup_container(content)
+            .max_width(360.0)
+            .max_height(420.0),
+    )
+    .map(cosmic::Action::App)
 }

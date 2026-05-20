@@ -10,7 +10,7 @@
 
 ## Overview
 
-Rust crate (`linux-pop-extension`): **COSMIC panel applet** for Pop!_OS via `libcosmic` (`cosmic::applet::run`). Binary requires feature `applet` and system Wayland/GTK-related dev packages. See `README.md` for install and “Add widget” steps.
+Rust crate (`linux-pop-extension`): **Cosmic Containers** — COSMIC panel applet for Pop!_OS that lists and starts/stops Docker containers via CLI (`libcosmic`, `cosmic::applet::run`). Binary requires feature `applet`, Docker in PATH, and system Wayland/GTK-related dev packages. See `README.md` for install and “Add widget” steps.
 
 **Chat language**: Reply to the user in **Ukrainian** unless they ask for another language. Keep code, identifiers, commits, and this file in **English**.
 
@@ -63,16 +63,17 @@ Prefer `cargo check` for fast feedback during edits; run `cargo build` or `cargo
 linux-pop-extension/
   AGENTS.md              # This file
   Cargo.toml             # `applet` feature → libcosmic
-  src/lib.rs             # APP_ID, PANEL_EMOJI (unit tests)
+  src/lib.rs             # APP_ID, ContainerSummary, parse_ps_output
   src/main.rs            # cosmic::applet::run
-  src/app.rs             # Application impl (panel view)
+  src/app.rs             # Application impl (panel + popup)
+  src/services/docker.rs # async docker CLI
   resources/             # .desktop, metainfo, icon
   scripts/install-local.sh
   .githooks/
   .cursor/skills/
 ```
 
-Panel UI lives in `src/app.rs`; shared constants in `src/lib.rs`. Register applets with `X-CosmicApplet=true` in `resources/*.desktop`.
+Panel UI lives in `src/app.rs`; parsing and types in `src/lib.rs`; Docker in `src/services/docker.rs`. Register applets with `X-CosmicApplet=true` in `resources/*.desktop`.
 
 ## Testing
 

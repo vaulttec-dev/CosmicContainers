@@ -9,8 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Click popup on panel smiley (toggle open/close with greeting text)
-- COSMIC panel applet using `libcosmic` (smiley `😀` on the panel)
+- **Cosmic Containers**: panel badge with running Docker container count
+- Popup list from `docker ps -a` (async CLI, non-blocking UI)
+- **Play** / **Stop** per container with automatic list refresh
+- Docker error hints (missing CLI, daemon, permission denied)
+- `src/services/docker.rs` and `ContainerSummary` parser with unit tests
+
+### Changed
+
+- Replaced smiley demo with Docker manager UI
+- Desktop/metainfo branding: **Cosmic Containers**
+
+### Added (initial scaffold)
+
+- COSMIC panel applet using `libcosmic` with popup support
 - Desktop entry and AppStream metainfo for **Add widget** in COSMIC settings
 - `scripts/install-local.sh` for `~/.local` installation
 - Optional `applet` feature so library tests build without GUI system libraries

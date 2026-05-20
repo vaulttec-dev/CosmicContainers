@@ -1,10 +1,11 @@
-# linux-pop-extension
+# Cosmic Containers (linux-pop-extension)
 
-COSMIC panel applet for **Pop!_OS** (COSMIC desktop). Starter widget that shows a smiley on the panel and can be added from system settings.
+COSMIC panel applet for **Pop!_OS**: manage Docker containers from the panel — running count at a glance, list in a popup, **Play** / **Stop** without keeping a terminal open on `docker ps`.
 
 ## Requirements
 
 - **Pop!_OS 24.04+** (or another distro with COSMIC panel)
+- **Docker** CLI (`docker` in `PATH`, daemon running, user in `docker` group or rootless Docker)
 - Rust 1.85 or newer (edition 2024)
 - System libraries for building `libcosmic`:
 
@@ -35,8 +36,17 @@ This installs to `~/.local` (binary, `.desktop`, AppStream metainfo, icon).
 
 1. Restart the panel or log out and back in (if the widget list does not update).
 2. Open **Settings → Desktop → Panel → Widgets → Add widget**.
-3. Select **Linux Pop Extension** → **Add**.
-4. The panel shows **😀**.
+3. Select **Cosmic Containers** (desktop id: `dev.linuxpop.Extension`) → **Add**.
+4. The panel shows the number of **running** containers (`0`, `1`, …). Click to open the list.
+
+## Usage
+
+| Panel | Meaning |
+|-------|---------|
+| `N` | `N` containers in `running` state |
+| `!` | Docker error (not installed, daemon down, or permission denied) |
+
+In the popup: **Refresh**, **Play** (start stopped container), **Stop** (stop running container).
 
 ## Development
 
@@ -67,7 +77,9 @@ cargo test --lib --no-default-features && cargo test --all-features
 | Item | Description |
 |------|-------------|
 | `APP_ID` | Desktop entry ID: `dev.linuxpop.Extension` |
-| `PANEL_EMOJI` | Panel label text (`😀`) |
+| `ContainerSummary` | Parsed `name` + `state` from `docker ps` |
+| `parse_ps_output` | Parse CLI stdout (`name\|state` per line) |
+| `running_count` | Count containers with `running` state |
 
 ## Contributing
 

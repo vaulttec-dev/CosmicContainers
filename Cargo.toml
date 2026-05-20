@@ -3,7 +3,7 @@ name = "linux-pop-extension"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-description = "COSMIC panel applet for Pop!_OS (smiley starter widget)"
+description = "COSMIC panel applet for Pop!_OS — Docker container manager on the panel"
 readme = "README.md"
 
 [features]
@@ -19,6 +19,7 @@ path = "src/main.rs"
 required-features = ["applet"]
 
 [dependencies]
+tokio = { version = "1", features = ["process", "rt"] }
 libcosmic = { git = "https://github.com/pop-os/libcosmic.git", optional = true, features = [
     "applet",
     "tokio",
