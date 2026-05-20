@@ -12,11 +12,13 @@
     }
   ],
   "devManager.quality.profile": "strict",
+  "devManager.quality.degradedStrict": true,
   "devManager.quality.customChecks": [
     { "label": "cargo fmt", "script": "cargo fmt --check", "type": "command" },
     { "label": "cargo check", "script": "cargo check", "type": "command" },
     { "label": "cargo clippy", "script": "cargo clippy -- -D warnings", "type": "command" },
-    { "label": "cargo test", "script": "cargo test", "type": "command" }
+    { "label": "cargo test", "script": "cargo test", "type": "command" },
+    { "label": "cargo audit", "script": "cargo audit", "type": "command" }
   ],
   "devManager.quality.skipDirs": ["target"],
   "devManager.git.defaultBranch": "master",
@@ -54,6 +56,13 @@
       "severity": "error"
     },
     {
+      "id": "cargo-audit",
+      "label": "cargo audit",
+      "kind": "command",
+      "command": "cargo audit",
+      "severity": "error"
+    },
+    {
       "id": "no-todo-rust",
       "label": "No TODO/FIXME in staged Rust",
       "kind": "pattern",
@@ -88,6 +97,12 @@
   "devManager.quality.builtin.shellcheck.precommit": true,
   "devManager.quality.builtin.commentedCode.enabled": true,
   "devManager.quality.builtin.commentedCode.precommit": true,
+  "devManager.quality.builtin.testRatio.warnAt": 0,
+  "devManager.quality.builtin.stryker.enabled": false,
+  "devManager.quality.builtin.act.enabled": false,
+  "devManager.quality.builtin.alex.enabled": false,
+  "devManager.quality.builtin.pkgAudit.enabled": false,
+  "devManager.quality.builtin.scorecard.enabled": false,
   "devManager.quality.builtin.trivy.enabled": false,
   "devManager.quality.semgrep.config": "auto",
   "devManager.team.enabled": false,

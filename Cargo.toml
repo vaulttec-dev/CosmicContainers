@@ -2,5 +2,15 @@
 name = "linux-pop-extension"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Linux desktop extension (early stage)"
+readme = "README.md"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "linux-pop-extension"
+path = "src/main.rs"
 
 [dependencies]
