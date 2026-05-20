@@ -1,19 +1,10 @@
 {
-  "devManager.project.name": "linux-pop-extension",
-  "devManager.project.dir": "/home/hifes/Documents/linux-pop-extension",
   "devManager.project.packageManager": "auto",
   "devManager.project.servers": [
     {
       "id": "rust",
       "label": "Rust binary",
-      "command": "cargo run",
-      "path": "",
-      "port": 0
-    },
-    {
-      "id": "install-local",
-      "label": "Install locally",
-      "command": "bash scripts/install-local.sh",
+      "command": "cargo run --release",
       "path": "",
       "port": 0
     }
@@ -22,18 +13,42 @@
   "devManager.quality.degradedStrict": true,
   "devManager.quality.customChecks": [
     {
-      "label": "install locally",
-      "script": "bash scripts/install-local.sh",
-      "type": "command"
+      "id": "cargo-fmt",
+      "label": "cargo fmt",
+      "command": "cargo fmt --check"
     },
-    { "label": "cargo fmt", "script": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo fmt --check'", "type": "command" },
-    { "label": "cargo verify", "script": "bash scripts/cargo-precommit.sh", "type": "command" },
-    { "label": "cargo clippy", "script": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo clippy --all-features --locked -- -D warnings'", "type": "command" },
-    { "label": "cargo audit", "script": "cargo audit", "type": "command" }
+    {
+      "id": "cargo-verify",
+      "label": "cargo verify",
+      "command": "bash scripts/cargo-precommit.sh"
+    },
+    {
+      "id": "cargo-clippy",
+      "label": "cargo clippy",
+      "command": "cargo clippy --all-features --locked -- -D warnings"
+    },
+    {
+      "id": "cargo-audit",
+      "label": "cargo audit",
+      "command": "cargo audit"
+    }
   ],
   "devManager.quality.skipDirs": ["target"],
   "devManager.git.defaultBranch": "master",
   "devManager.ci.workflowsPath": ".github/workflows",
+  "devManager.workflows.custom": [
+    {
+      "id": "install-local",
+      "label": "Install locally",
+      "stopOnFailure": true,
+      "steps": [
+        {
+          "kind": "shell",
+          "command": "bash scripts/install-local.sh"
+        }
+      ]
+    }
+  ],
   "devManager.realtime.enabled": false,
   "devManager.realtime.precommit.mode": "block",
   "devManager.realtime.precommit.sendFailToChat": true,
@@ -42,7 +57,7 @@
       "id": "cargo-fmt",
       "label": "cargo fmt",
       "kind": "command",
-      "command": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo fmt --check'",
+      "command": "cargo fmt --check",
       "severity": "error"
     },
     {
@@ -56,7 +71,7 @@
       "id": "cargo-clippy",
       "label": "cargo clippy",
       "kind": "command",
-      "command": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && cargo clippy --all-features --locked -- -D warnings'",
+      "command": "cargo clippy --all-features --locked -- -D warnings",
       "severity": "error"
     },
     {
