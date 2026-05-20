@@ -1,0 +1,52 @@
+{
+  "devManager.project.name": "linux-pop-extension",
+  "devManager.project.dir": "/home/hifes/Documents/linux-pop-extension",
+  "devManager.project.packageManager": "auto",
+  "devManager.project.servers": [
+    {
+      "id": "rust",
+      "label": "Rust binary",
+      "command": "cargo run",
+      "path": "",
+      "port": 0
+    }
+  ],
+  "devManager.quality.profile": "strict",
+  "devManager.quality.skipDirs": ["target"],
+  "devManager.git.defaultBranch": "master",
+  "devManager.ci.workflowsPath": ".github/workflows",
+  "devManager.realtime.enabled": false,
+  "devManager.realtime.precommit.mode": "block",
+  "devManager.realtime.precommit.customChecks": [
+    {
+      "id": "cargo-fmt",
+      "label": "cargo fmt",
+      "kind": "command",
+      "command": "cargo fmt --check",
+      "severity": "error"
+    },
+    {
+      "id": "cargo-clippy",
+      "label": "cargo clippy",
+      "kind": "command",
+      "command": "cargo clippy -- -D warnings",
+      "severity": "error"
+    },
+    {
+      "id": "cargo-test",
+      "label": "cargo test",
+      "kind": "command",
+      "command": "cargo test",
+      "severity": "error"
+    }
+  ],
+  "devManager.quality.builtin.cargoToml.enabled": true,
+  "devManager.quality.builtin.cargoToml.precommit": true,
+  "devManager.quality.builtin.trivy.enabled": false,
+  "devManager.quality.semgrep.config": "auto",
+  "devManager.team.enabled": false,
+  "devManager.quality.builtin.reactHookRules.enabled": false,
+  "devManager.quality.builtin.a11yCheck.enabled": false,
+  "devManager.quality.builtin.eslint.enabled": false,
+  "devManager.quality.builtin.prettierCheck.enabled": false
+}

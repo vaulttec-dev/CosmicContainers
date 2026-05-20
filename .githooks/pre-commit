@@ -1,0 +1,19 @@
+#!/bin/sh
+# SnakeFlow pre-commit gate v1
+# Auto-installed by SnakeFlow. Delete this file to opt out.
+_sf_run() {
+  _cli=""
+  for _d in \
+    "${HOME}/.cursor/extensions" \
+    "${HOME}/.vscode/extensions" \
+    "${HOME}/.antigravity/extensions" \
+    "${USERPROFILE:-}/.cursor/extensions" \
+    "${USERPROFILE:-}/.vscode/extensions"; do
+    for _f in "${_d}"/vaulttec-dev.snakeflow-dev-manager-*/out/precommit-cli.js; do
+      [ -f "${_f}" ] && _cli="${_f}"
+    done
+  done
+  [ -n "${_cli}" ] && exec node "${_cli}"
+  exit 0
+}
+_sf_run
