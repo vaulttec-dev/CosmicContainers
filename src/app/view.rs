@@ -10,9 +10,12 @@ pub(super) fn panel_view(app: &App) -> Element<'_, Message> {
         linux_pop_extension::DOCKER_ICON_SVG,
     ))
     .size(icon_size);
-    let panel_content = widget::row![docker_icon, widget::text(app.panel_label())]
-        .spacing(6)
-        .align_y(Alignment::Center);
+    let panel_content = widget::row![
+        docker_icon,
+        widget::text(app.panel_label()).size(app.settings.panel_count_font_size),
+    ]
+    .spacing(6)
+    .align_y(Alignment::Center);
 
     app.core
         .applet

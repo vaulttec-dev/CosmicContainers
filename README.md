@@ -48,9 +48,10 @@ This installs to `~/.local` (binary, `.desktop`, AppStream metainfo, icon).
 
 In the popup:
 
-- Tabs: **Containers**, **Images**, **Volumes**
+- Tabs: **Containers**, **Images**, **Volumes**, **Settings**
 - **Containers**: grouped by Compose project, **hide stopped** filter (hide icon), collapse groups, icon actions (play / stop / reload / delete)
 - **Images** / **Volumes**: list with delete (`docker rmi` / `docker volume rm`) and refresh
+- **Settings**: panel running-count font size (10–28 pt), live preview; saved to `~/.config/linux-pop-extension/settings.conf`
 - Auto-refresh every 5 seconds (panel count + open popup)
 
 ## Development

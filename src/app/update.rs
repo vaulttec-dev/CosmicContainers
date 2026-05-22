@@ -37,6 +37,7 @@ impl App {
             Message::StartGroup(project) => self.start_group(project),
             Message::StopGroup(project) => self.stop_group(project),
             Message::RestartGroup(project) => self.restart_group(project),
+            Message::PanelCountFontSizeChanged(size) => self.set_panel_count_font_size(size),
         }
     }
 
@@ -79,13 +80,19 @@ impl App {
     fn poll_lists(&self) -> Task<Message> {
         let silent = true;
         let mut tasks = vec![Self::fetch_tab_task(PopupTab::Containers, silent)];
-        if self.popup.is_some() && self.active_tab != PopupTab::Containers {
+        if self.popup.is_some()
+            && self.active_tab != PopupTab::Containers
+            && App::needs_data_fetch(self.active_tab)
+        {
             tasks.push(Self::fetch_tab_task(self.active_tab, silent));
         }
         Task::batch(tasks)
     }
 
     fn refresh_active_tab(&mut self) -> Task<Message> {
+        if !App::needs_data_fetch(self.active_tab) {
+            return Task::none();
+        }
         self.loading = true;
         self.fetch_active_tab(false)
     }
@@ -95,10 +102,24 @@ impl App {
             return Task::none();
         }
         self.active_tab = tab;
-        self.loading = true;
         self.error = None;
         self.pending_remove = None;
+        if !App::needs_data_fetch(tab) {
+            self.loading = false;
+            return Task::none();
+        }
+        self.loading = true;
         self.fetch_active_tab(false)
+    }
+
+    fn set_panel_count_font_size(&mut self, size: u16) -> Task<Message> {
+        self.settings.set_panel_count_font_size(size);
+        if let Err(err) = linux_pop_extension::settings::save(&self.settings) {
+            self.error = Some(err);
+        } else if self.active_tab == PopupTab::Settings {
+            self.error = None;
+        }
+        Task::none()
     }
 
     fn toggle_running_filter(&mut self) -> Task<Message> {

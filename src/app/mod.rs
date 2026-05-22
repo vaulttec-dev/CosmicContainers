@@ -11,8 +11,8 @@ use cosmic::iced::theme::Style;
 use cosmic::iced::window;
 use cosmic::iced::window::Id;
 use linux_pop_extension::{
-    ContainerGroup, ContainerSummary, ImageSummary, POLL_INTERVAL_SECS, PopupTab, VolumeSummary,
-    filter_containers, group_containers, running_count,
+    ContainerGroup, ContainerSummary, ImageSummary, POLL_INTERVAL_SECS, PopupTab, UserSettings,
+    VolumeSummary, filter_containers, group_containers, running_count, settings,
 };
 
 pub use popup::POPUP_HEIGHT;
@@ -41,6 +41,7 @@ pub struct App {
     pub(super) pending_remove: Option<PendingRemove>,
     pub(super) loading: bool,
     pub(super) error: Option<String>,
+    pub(super) settings: UserSettings,
 }
 
 /// Messages from the panel button, popup, and Docker CLI results.
@@ -74,6 +75,7 @@ pub enum Message {
     StartGroup(String),
     StopGroup(String),
     RestartGroup(String),
+    PanelCountFontSizeChanged(u16),
 }
 
 impl App {
@@ -171,7 +173,12 @@ impl App {
             PopupTab::Volumes => Task::perform(volumes::list_volumes(), move |result| {
                 cosmic::Action::App(Message::VolumesLoaded { result, silent })
             }),
+            PopupTab::Settings => Task::none(),
         }
+    }
+
+    pub(super) fn needs_data_fetch(tab: PopupTab) -> bool {
+        !matches!(tab, PopupTab::Settings)
     }
 
     pub(super) fn fetch_active_tab(&self, silent: bool) -> Task<Message> {
@@ -198,6 +205,7 @@ impl cosmic::Application for App {
         (
             Self {
                 core,
+                settings: settings::load(),
                 ..Default::default()
             },
             Self::fetch_tab_task(PopupTab::Containers, false),

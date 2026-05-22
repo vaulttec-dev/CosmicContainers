@@ -26,6 +26,7 @@ pub enum PopupTab {
     Containers,
     Images,
     Volumes,
+    Settings,
 }
 
 /// One row from `docker ps` with Compose labels.

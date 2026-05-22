@@ -1,6 +1,7 @@
 mod containers;
 mod images_tab;
 mod layout;
+mod settings_tab;
 mod volumes_tab;
 mod widgets;
 
@@ -44,6 +45,7 @@ pub(super) fn popup_view(state: &App) -> Element<'_, cosmic::Action<Message>> {
         PopupTab::Containers => containers::containers_tab(state),
         PopupTab::Images => images_tab::images_tab(state),
         PopupTab::Volumes => volumes_tab::volumes_tab(state),
+        PopupTab::Settings => settings_tab::settings_tab(state),
     };
     content = content.push(
         widget::container(tab_body)
@@ -75,6 +77,7 @@ fn header_bar<'a>(state: &'a App) -> Element<'a, Message> {
         tab_button("Containers", PopupTab::Containers, state.active_tab),
         tab_button("Images", PopupTab::Images, state.active_tab),
         tab_button("Volumes", PopupTab::Volumes, state.active_tab),
+        tab_button("Settings", PopupTab::Settings, state.active_tab),
         widget::text("").width(Length::Fill),
         toolbar,
     ]
