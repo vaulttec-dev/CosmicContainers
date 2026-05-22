@@ -6,7 +6,7 @@ COSMIC panel applet for **Pop!_OS**: manage Docker containers from the panel —
 
 - **Pop!_OS 24.04+** (or another distro with COSMIC panel)
 - **Docker** CLI (`docker` in `PATH`, daemon running, user in `docker` group or rootless Docker)
-- Rust 1.85 or newer (edition 2024)
+- Rust 1.93 or newer (edition 2024; required by `libcosmic`)
 - System libraries for building `libcosmic`:
 
 ```bash
