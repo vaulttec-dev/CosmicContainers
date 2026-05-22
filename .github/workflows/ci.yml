@@ -37,7 +37,7 @@ jobs:
             libegl1-mesa-dev libinput-dev libpulse-dev
 
       - name: Format
-        run: cargo fmt --all-features --check
+        run: cargo fmt --check
 
       - name: Clippy
         run: cargo clippy --all-features -- -D warnings
