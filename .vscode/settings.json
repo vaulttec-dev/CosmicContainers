@@ -40,11 +40,48 @@
     {
       "id": "install-local",
       "label": "Install locally",
+      "icon": "desktop-download",
       "stopOnFailure": true,
       "steps": [
         {
           "kind": "shell",
           "command": "bash scripts/install-local.sh"
+        }
+      ]
+    },
+    {
+      "id": "flatpak-lint",
+      "label": "Flatpak: lint manifest",
+      "icon": "checklist",
+      "stopOnFailure": true,
+      "steps": [
+        {
+          "kind": "shell",
+          "command": "bash scripts/flatpak-lint.sh"
+        }
+      ]
+    },
+    {
+      "id": "flatpak-build",
+      "label": "Flatpak: build and install (local)",
+      "icon": "package",
+      "stopOnFailure": true,
+      "steps": [
+        {
+          "kind": "shell",
+          "command": "bash scripts/flatpak-build-local.sh"
+        }
+      ]
+    },
+    {
+      "id": "release-check",
+      "label": "Release check (Rust / CI parity)",
+      "icon": "rocket",
+      "stopOnFailure": true,
+      "steps": [
+        {
+          "kind": "shell",
+          "command": "bash scripts/release-check.sh"
         }
       ]
     }

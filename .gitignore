@@ -34,4 +34,8 @@ Thumbs.db
 .flatpak-builder/
 flatpak-build/
 build-dir/
+cosmic-repo-test/
+build-cosmic/
+build-cosmic-git/
+cosmic-build-log/
 repo/

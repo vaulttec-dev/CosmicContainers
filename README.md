@@ -34,7 +34,9 @@ This installs to `~/.local` (binary, `.desktop`, AppStream metainfo, icon).
 
 ### Flatpak (COSMIC Store / cosmic remote)
 
-After the app is published to [COSMIC Flatpak](https://github.com/pop-os/cosmic-flatpak):
+Distribution channel: [COSMIC Flatpak](https://github.com/pop-os/cosmic-flatpak) (Flathub does not accept panel applets). Track submission: [pop-os/cosmic-flatpak#178](https://github.com/pop-os/cosmic-flatpak/pull/178).
+
+Once merged and published:
 
 ```bash
 flatpak remote-add --if-not-exists --user cosmic https://apt.pop-os.org/cosmic/cosmic.flatpakrepo
