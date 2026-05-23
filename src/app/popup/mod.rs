@@ -34,7 +34,7 @@ pub(super) fn popup_view(state: &App) -> Element<'_, cosmic::Action<Message>> {
     );
 
     if state.loading {
-        content = content.push(status_line("Завантаження…"));
+        content = content.push(status_line("Loading…"));
     }
 
     if let Some(err) = &state.error {
@@ -66,10 +66,10 @@ fn header_bar<'a>(state: &'a App) -> Element<'a, Message> {
     .align_y(Alignment::Center);
 
     widget::row![
-        tab_button("Контейнери", PopupTab::Containers, state.active_tab),
-        tab_button("Образи", PopupTab::Images, state.active_tab),
-        tab_button("Томи", PopupTab::Volumes, state.active_tab),
-        tab_button("Налаштування", PopupTab::Settings, state.active_tab),
+        tab_button("Containers", PopupTab::Containers, state.active_tab),
+        tab_button("Images", PopupTab::Images, state.active_tab),
+        tab_button("Volumes", PopupTab::Volumes, state.active_tab),
+        tab_button("Settings", PopupTab::Settings, state.active_tab),
         widget::text("").width(Length::Fill),
         toolbar,
     ]

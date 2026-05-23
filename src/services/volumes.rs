@@ -13,7 +13,7 @@ pub async fn list_volumes() -> Result<Vec<VolumeSummary>, String> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format_cli_failure_public(
             &stderr,
-            "docker volume ls не вдався",
+            "docker volume ls failed",
         ));
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -29,7 +29,7 @@ pub async fn remove_volume(name: &str) -> Result<(), String> {
     let stderr = String::from_utf8_lossy(&output.stderr);
     Err(format_cli_failure_public(
         &stderr,
-        "docker volume rm не вдався",
+        "docker volume rm failed",
     ))
 }
 

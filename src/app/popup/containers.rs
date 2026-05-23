@@ -16,7 +16,7 @@ use crate::app::PendingRemove;
 
 pub(super) fn containers_tab<'a>(state: &'a App) -> Element<'a, Message> {
     if state.groups.is_empty() && !state.loading && state.error.is_none() {
-        return empty_state("Немає контейнерів");
+        return empty_state("No containers");
     }
 
     let mut list = widget::column![].spacing(SPACING_NONE);
@@ -76,7 +76,7 @@ fn container_row<'a>(
         pending_remove,
         Some(PendingRemove::Container(n)) if n == &name
     ) {
-        return remove_confirm_row(format!("Видалити {name}?"));
+        return remove_confirm_row(format!("Remove {name}?"));
     }
 
     list_row(
@@ -133,7 +133,7 @@ fn group_header<'a>(
             ),
             widget::container(item_labels(
                 group.project.clone(),
-                format!("{running}/{total} запущено"),
+                format!("{running}/{total} running"),
             ))
             .width(Length::FillPortion(FILL_PORTION_PROMPT)),
             toolbar,
