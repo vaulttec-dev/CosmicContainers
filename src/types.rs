@@ -13,6 +13,29 @@ pub const STANDALONE_GROUP: &str = "Standalone";
 /// Auto-refresh interval for panel and popup lists.
 pub const POLL_INTERVAL_SECS: u64 = 5;
 
+/// Maximum list rows shown per popup tab page.
+pub const LIST_PAGE_SIZE: usize = 8;
+
+/// Total pages for a list of `item_count` rows at `page_size` per page (minimum 1).
+pub fn total_pages(item_count: usize, page_size: usize) -> usize {
+    if page_size == 0 {
+        return 1;
+    }
+    item_count.div_ceil(page_size).max(1)
+}
+
+/// Clamp a zero-based page index to `[0, total_pages - 1]`.
+pub fn clamp_page(page: usize, total: usize) -> usize {
+    page.min(total.saturating_sub(1))
+}
+
+/// Slice range for the given zero-based page.
+pub fn page_range(page: usize, page_size: usize, len: usize) -> std::ops::Range<usize> {
+    let start = page * page_size;
+    let end = (start + page_size).min(len);
+    start..end
+}
+
 /// Pop/COSMIC symbolic icon names (group collapse).
 pub mod icons {
     pub const EXPAND: &str = "pan-end-symbolic";
@@ -93,4 +116,32 @@ pub struct ImageSummary {
 pub struct VolumeSummary {
     pub name: String,
     pub driver: String,
+}
+
+#[cfg(test)]
+mod pagination_tests {
+    use super::{LIST_PAGE_SIZE, clamp_page, page_range, total_pages};
+
+    #[test]
+    fn total_pages_empty_list_is_one() {
+        assert_eq!(total_pages(0, LIST_PAGE_SIZE), 1);
+    }
+
+    #[test]
+    fn total_pages_exact_and_partial() {
+        assert_eq!(total_pages(8, 8), 1);
+        assert_eq!(total_pages(9, 8), 2);
+    }
+
+    #[test]
+    fn clamp_page_stays_in_bounds() {
+        assert_eq!(clamp_page(0, 1), 0);
+        assert_eq!(clamp_page(5, 3), 2);
+    }
+
+    #[test]
+    fn page_range_slices_correctly() {
+        assert_eq!(page_range(0, 8, 5), 0..5);
+        assert_eq!(page_range(1, 8, 10), 8..10);
+    }
 }

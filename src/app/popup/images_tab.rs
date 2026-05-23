@@ -2,11 +2,12 @@ use cosmic::Element;
 use cosmic::widget;
 use linux_pop_extension::ImageSummary;
 use linux_pop_extension::action_icons;
+use linux_pop_extension::{LIST_PAGE_SIZE, clamp_page, page_range, total_pages};
 
 use super::layout::SPACING_NONE;
 use super::layout::SPACING_XXS;
 use super::widgets::{
-    action_svg_button, empty_state, item_labels, list_row, remove_confirm_row, scrollable_list,
+    action_svg_button, empty_state, item_labels, list_row, paginated_list, remove_confirm_row,
 };
 use super::{App, Message};
 use crate::app::PendingRemove;
@@ -16,11 +17,15 @@ pub(super) fn images_tab<'a>(state: &'a App) -> Element<'a, Message> {
         return empty_state("No images");
     }
 
+    let total = total_pages(state.image_list.len(), LIST_PAGE_SIZE);
+    let page = clamp_page(state.tab_pages.images, total);
+    let range = page_range(page, LIST_PAGE_SIZE, state.image_list.len());
+
     let mut list = widget::column![].spacing(SPACING_NONE);
-    for image in &state.image_list {
+    for image in &state.image_list[range] {
         list = list.push(image_row(image, &state.pending_remove));
     }
-    scrollable_list(list.into())
+    paginated_list(list.into(), page, total)
 }
 
 fn image_row<'a>(

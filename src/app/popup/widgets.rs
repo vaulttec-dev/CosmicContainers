@@ -10,7 +10,7 @@ use super::Message;
 use super::layout::{
     FILL_PORTION_LABELS, FILL_PORTION_PROMPT, FONT_PRIMARY, FONT_SECONDARY, FONT_STATUS, ICON_SIZE,
     PAD_CONFIRM_BUTTON, PAD_ICON_BUTTON, PAD_LIST_ROW, PAD_SECTION_DIVIDER, PAD_STATUS, PAD_TAB,
-    POPUP_HEIGHT, POPUP_WIDTH, SPACING_MD, SPACING_SM, SPACING_XXS,
+    POPUP_HEIGHT, POPUP_WIDTH, SPACING_MD, SPACING_NONE, SPACING_SM, SPACING_XXS,
 };
 
 pub(super) fn popup_shell<'a>(
@@ -119,6 +119,60 @@ pub(super) fn scrollable_list<'a>(list: Element<'a, Message>) -> Element<'a, Mes
         .height(Length::Fill)
         .width(Length::Fill)
         .into()
+}
+
+pub(super) fn paginated_list<'a>(
+    list: Element<'a, Message>,
+    current_page: usize,
+    total_pages: usize,
+) -> Element<'a, Message> {
+    widget::column![
+        scrollable_list(list),
+        pagination_bar(current_page, total_pages),
+    ]
+    .spacing(SPACING_NONE)
+    .height(Length::Fill)
+    .into()
+}
+
+pub(super) fn pagination_bar<'a>(current_page: usize, total_pages: usize) -> Element<'a, Message> {
+    let page_label = format!("Page {} / {total_pages}", current_page + 1);
+    let at_first = current_page == 0;
+    let at_last = current_page + 1 >= total_pages;
+
+    let prev: Element<'a, Message> = if at_first {
+        widget::button::text("‹").padding(PAD_TAB).into()
+    } else {
+        widget::button::text("‹")
+            .padding(PAD_TAB)
+            .class(theme::Button::Text)
+            .on_press(Message::TabPagePrev)
+            .into()
+    };
+
+    let next: Element<'a, Message> = if at_last {
+        widget::button::text("›").padding(PAD_TAB).into()
+    } else {
+        widget::button::text("›")
+            .padding(PAD_TAB)
+            .class(theme::Button::Text)
+            .on_press(Message::TabPageNext)
+            .into()
+    };
+
+    widget::container(
+        widget::row![
+            prev,
+            widget::text(page_label).size(FONT_STATUS),
+            widget::text("").width(Length::Fill),
+            next,
+        ]
+        .align_y(Alignment::Center)
+        .spacing(SPACING_SM),
+    )
+    .width(Length::Fill)
+    .padding(PAD_STATUS)
+    .into()
 }
 
 pub(super) fn remove_confirm_row<'a>(prompt: String) -> Element<'a, Message> {

@@ -26,6 +26,25 @@ pub enum PendingRemove {
     Volume(String),
 }
 
+/// Per-tab zero-based page index for paginated list tabs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct TabPages {
+    pub(super) containers: usize,
+    pub(super) images: usize,
+    pub(super) volumes: usize,
+}
+
+impl TabPages {
+    pub(super) fn page_mut(&mut self, tab: PopupTab) -> Option<&mut usize> {
+        match tab {
+            PopupTab::Containers => Some(&mut self.containers),
+            PopupTab::Images => Some(&mut self.images),
+            PopupTab::Volumes => Some(&mut self.volumes),
+            PopupTab::Settings => None,
+        }
+    }
+}
+
 /// COSMIC panel applet state.
 #[derive(Default)]
 pub struct App {
@@ -37,6 +56,7 @@ pub struct App {
     pub(super) image_list: Vec<ImageSummary>,
     pub(super) volume_list: Vec<VolumeSummary>,
     pub(super) collapsed_groups: HashSet<String>,
+    pub(super) tab_pages: TabPages,
     pub(super) pending_remove: Option<PendingRemove>,
     pub(super) loading: bool,
     pub(super) error: Option<String>,
@@ -51,6 +71,8 @@ pub enum Message {
     Poll,
     Refresh,
     TabSelected(PopupTab),
+    TabPagePrev,
+    TabPageNext,
     ToggleGroupCollapse(String),
     RequestRemove(PendingRemove),
     ConfirmRemove,
@@ -88,6 +110,29 @@ impl App {
         self.groups = group_containers(self.containers.clone());
     }
 
+    pub(super) fn container_row_count(&self) -> usize {
+        self.groups.iter().fold(0, |count, group| {
+            let collapsed = self.collapsed_groups.contains(&group.project);
+            count + 1 + if collapsed { 0 } else { group.containers.len() }
+        })
+    }
+
+    pub(super) fn clamp_tab_page(&mut self, tab: PopupTab) {
+        use linux_pop_extension::{LIST_PAGE_SIZE, clamp_page, total_pages};
+
+        let item_count = match tab {
+            PopupTab::Containers => self.container_row_count(),
+            PopupTab::Images => self.image_list.len(),
+            PopupTab::Volumes => self.volume_list.len(),
+            PopupTab::Settings => return,
+        };
+        let total = total_pages(item_count, LIST_PAGE_SIZE);
+        let Some(page) = self.tab_pages.page_mut(tab) else {
+            return;
+        };
+        *page = clamp_page(*page, total);
+    }
+
     pub(super) fn apply_containers(
         &mut self,
         result: Result<Vec<ContainerSummary>, String>,
@@ -100,6 +145,7 @@ impl App {
             Ok(containers) => {
                 self.containers = containers;
                 self.rebuild_groups();
+                self.clamp_tab_page(PopupTab::Containers);
                 if self.active_tab == PopupTab::Containers {
                     self.error = None;
                 }
@@ -119,6 +165,7 @@ impl App {
         match result {
             Ok(image_list) => {
                 self.image_list = image_list;
+                self.clamp_tab_page(PopupTab::Images);
                 if self.active_tab == PopupTab::Images {
                     self.error = None;
                 }
@@ -142,6 +189,7 @@ impl App {
         match result {
             Ok(volume_list) => {
                 self.volume_list = volume_list;
+                self.clamp_tab_page(PopupTab::Volumes);
                 if self.active_tab == PopupTab::Volumes {
                     self.error = None;
                 }

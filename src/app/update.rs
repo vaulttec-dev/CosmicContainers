@@ -14,6 +14,8 @@ impl App {
             Message::Poll => self.poll_lists(),
             Message::Refresh => self.refresh_active_tab(),
             Message::TabSelected(tab) => self.select_tab(tab),
+            Message::TabPagePrev => self.tab_page_prev(),
+            Message::TabPageNext => self.tab_page_next(),
             Message::ToggleGroupCollapse(project) => self.toggle_group_collapse(project),
             Message::RequestRemove(target) => self.request_remove(target),
             Message::CancelRemove => self.cancel_remove(),
@@ -111,6 +113,47 @@ impl App {
         self.fetch_active_tab(false)
     }
 
+    fn tab_page_prev(&mut self) -> Task<Message> {
+        use linux_pop_extension::{LIST_PAGE_SIZE, clamp_page, total_pages};
+
+        let tab = self.active_tab;
+        let item_count = match tab {
+            PopupTab::Containers => self.container_row_count(),
+            PopupTab::Images => self.image_list.len(),
+            PopupTab::Volumes => self.volume_list.len(),
+            PopupTab::Settings => return Task::none(),
+        };
+        let total = total_pages(item_count, LIST_PAGE_SIZE);
+        let Some(page) = self.tab_pages.page_mut(tab) else {
+            return Task::none();
+        };
+        if *page > 0 {
+            *page -= 1;
+        }
+        *page = clamp_page(*page, total);
+        Task::none()
+    }
+
+    fn tab_page_next(&mut self) -> Task<Message> {
+        use linux_pop_extension::{LIST_PAGE_SIZE, total_pages};
+
+        let tab = self.active_tab;
+        let item_count = match tab {
+            PopupTab::Containers => self.container_row_count(),
+            PopupTab::Images => self.image_list.len(),
+            PopupTab::Volumes => self.volume_list.len(),
+            PopupTab::Settings => return Task::none(),
+        };
+        let total = total_pages(item_count, LIST_PAGE_SIZE);
+        let Some(page) = self.tab_pages.page_mut(tab) else {
+            return Task::none();
+        };
+        if *page + 1 < total {
+            *page += 1;
+        }
+        Task::none()
+    }
+
     fn set_panel_count_font_size(&mut self, size: u16) -> Task<Message> {
         self.settings.set_panel_count_font_size(size);
         if let Err(err) = linux_pop_extension::settings::save(&self.settings) {
@@ -127,6 +170,7 @@ impl App {
         } else {
             self.collapsed_groups.insert(project);
         }
+        self.clamp_tab_page(PopupTab::Containers);
         Task::none()
     }
 

@@ -4,29 +4,75 @@ use cosmic::iced::alignment::Alignment;
 use cosmic::widget;
 use linux_pop_extension::action_icons;
 use linux_pop_extension::icons;
-use linux_pop_extension::{ContainerGroup, ContainerSummary};
+use linux_pop_extension::{
+    ContainerGroup, ContainerSummary, LIST_PAGE_SIZE, clamp_page, page_range, total_pages,
+};
 
 use super::layout::{FILL_PORTION_PROMPT, PAD_GROUP_HEADER, SPACING_NONE, SPACING_SM, SPACING_XXS};
 use super::widgets::{
-    action_icon_button, action_svg_button, empty_state, item_labels, list_row, remove_confirm_row,
-    scrollable_list, section_divider,
+    action_icon_button, action_svg_button, empty_state, item_labels, list_row, paginated_list,
+    remove_confirm_row, section_divider,
 };
 use super::{App, Message};
 use crate::app::PendingRemove;
+
+enum ContainerListRow<'a> {
+    GroupHeader {
+        group: &'a ContainerGroup,
+        collapsed: bool,
+    },
+    Container {
+        container: &'a ContainerSummary,
+    },
+}
 
 pub(super) fn containers_tab<'a>(state: &'a App) -> Element<'a, Message> {
     if state.groups.is_empty() && !state.loading && state.error.is_none() {
         return empty_state("No containers");
     }
 
+    let rows = build_container_rows(state);
+    let total = total_pages(rows.len(), LIST_PAGE_SIZE);
+    let page = clamp_page(state.tab_pages.containers, total);
+    let range = page_range(page, LIST_PAGE_SIZE, rows.len());
+
     let mut list = widget::column![].spacing(SPACING_NONE);
-    for (index, group) in state.groups.iter().enumerate() {
-        if index > 0 {
+    for (index, row) in rows[range].iter().enumerate() {
+        if index > 0 && matches!(row, ContainerListRow::GroupHeader { .. }) {
             list = list.push(section_divider());
         }
-        list = list.push(group_section(state, group));
+        match row {
+            ContainerListRow::GroupHeader { group, collapsed } => {
+                list = list.push(group_header_row(
+                    group,
+                    *collapsed,
+                    group_toolbar(group, *collapsed),
+                ));
+            }
+            ContainerListRow::Container { container } => {
+                list = list.push(widget::container(container_row(
+                    container,
+                    &state.pending_remove,
+                )));
+            }
+        }
     }
-    scrollable_list(list.into())
+
+    paginated_list(list.into(), page, total)
+}
+
+fn build_container_rows<'a>(state: &'a App) -> Vec<ContainerListRow<'a>> {
+    let mut rows = Vec::new();
+    for group in &state.groups {
+        let collapsed = state.collapsed_groups.contains(&group.project);
+        rows.push(ContainerListRow::GroupHeader { group, collapsed });
+        if !collapsed {
+            for container in &group.containers {
+                rows.push(ContainerListRow::Container { container });
+            }
+        }
+    }
+    rows
 }
 
 fn container_state_line(container: &ContainerSummary) -> String {
@@ -112,7 +158,7 @@ fn group_toolbar<'a>(group: &'a ContainerGroup, collapsed: bool) -> Element<'a, 
     actions.into()
 }
 
-fn group_header<'a>(
+fn group_header_row<'a>(
     group: &'a ContainerGroup,
     collapsed: bool,
     toolbar: Element<'a, Message>,
@@ -144,20 +190,4 @@ fn group_header<'a>(
     .padding(PAD_GROUP_HEADER)
     .width(Length::Fill)
     .into()
-}
-
-fn group_section<'a>(state: &'a App, group: &'a ContainerGroup) -> Element<'a, Message> {
-    let collapsed = state.collapsed_groups.contains(&group.project);
-    let header = group_header(group, collapsed, group_toolbar(group, collapsed));
-
-    let mut section = widget::column![header].spacing(SPACING_NONE);
-    if !collapsed {
-        for container in &group.containers {
-            section = section.push(widget::container(container_row(
-                container,
-                &state.pending_remove,
-            )));
-        }
-    }
-    section.into()
 }
