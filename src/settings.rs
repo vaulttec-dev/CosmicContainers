@@ -1,4 +1,4 @@
-//! User preferences persisted under `~/.config/linux-pop-extension/settings.conf`.
+//! User preferences persisted under `~/.config/{APP_ID}/settings.conf`.
 
 use std::fs;
 use std::path::PathBuf;
@@ -39,6 +39,7 @@ impl UserSettings {
 
 /// Load settings from disk, falling back to defaults on missing or invalid files.
 pub fn load() -> UserSettings {
+    migrate_legacy_config();
     let Some(path) = config_path() else {
         return UserSettings::default();
     };
@@ -65,9 +66,38 @@ fn config_path() -> Option<PathBuf> {
     std::env::var_os("HOME").map(|home| {
         PathBuf::from(home)
             .join(".config")
+            .join(APP_ID)
+            .join("settings.conf")
+    })
+}
+
+fn legacy_config_path() -> Option<PathBuf> {
+    std::env::var_os("HOME").map(|home| {
+        PathBuf::from(home)
+            .join(".config")
             .join("linux-pop-extension")
             .join("settings.conf")
     })
+}
+
+/// Copy legacy settings from the pre-Flatpak config directory when needed.
+fn migrate_legacy_config() {
+    let Some(new_path) = config_path() else {
+        return;
+    };
+    if new_path.exists() {
+        return;
+    }
+    let Some(legacy_path) = legacy_config_path() else {
+        return;
+    };
+    if !legacy_path.exists() {
+        return;
+    }
+    if let Some(parent) = new_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let _ = fs::copy(&legacy_path, &new_path);
 }
 
 fn parse(contents: &str) -> Option<UserSettings> {

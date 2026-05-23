@@ -33,4 +33,5 @@ Thumbs.db
 # Flatpak / build artifacts (when added later)
 .flatpak-builder/
 flatpak-build/
+build-dir/
 repo/

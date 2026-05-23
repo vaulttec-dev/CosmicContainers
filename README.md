@@ -32,11 +32,35 @@ cd linux-pop-extension
 
 This installs to `~/.local` (binary, `.desktop`, AppStream metainfo, icon).
 
+### Flatpak (COSMIC Store / cosmic remote)
+
+After the app is published to [COSMIC Flatpak](https://github.com/pop-os/cosmic-flatpak):
+
+```bash
+flatpak remote-add --if-not-exists --user cosmic https://apt.pop-os.org/cosmic/cosmic.flatpakrepo
+flatpak install cosmic io.github.vaulttec_dev.CosmicContainers
+```
+
+Requires **Docker on the host** (daemon running, user in `docker` group or rootless Docker). The Flatpak uses `flatpak-spawn --host docker` to reach the host CLI.
+
+Build locally from this repository:
+
+```bash
+sudo apt install flatpak flatpak-builder
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --if-not-exists --user cosmic https://apt.pop-os.org/cosmic/cosmic.flatpakrepo
+flatpak install -y flathub org.flatpak.Builder com.system76.Cosmic.BaseApp//stable \
+  org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08 \
+  org.freedesktop.Sdk.Extension.rust-stable//25.08
+flatpak-builder --user --install --force-clean build-dir \
+  flatpak/io.github.vaulttec_dev.CosmicContainers.json
+```
+
 ### Add the widget
 
 1. Restart the panel or log out and back in (if the widget list does not update).
 2. Open **Settings → Desktop → Panel → Widgets → Add widget**.
-3. Select **Cosmic Containers** (desktop id: `dev.linuxpop.Extension`) → **Add**.
+3. Select **Cosmic Containers** (desktop id: `io.github.vaulttec_dev.CosmicContainers`) → **Add**.
 4. The panel shows the number of **running** containers (`0`, `1`, …). Click to open the list.
 
 ## Usage
@@ -51,7 +75,7 @@ In the popup:
 - Tabs: **Containers**, **Images**, **Volumes**, **Settings**
 - **Containers**: grouped by Compose project, **hide stopped** filter (hide icon), collapse groups, icon actions (play / stop / reload / delete)
 - **Images** / **Volumes**: list with delete (`docker rmi` / `docker volume rm`) and refresh
-- **Settings**: panel running-count font size (10–28 pt), live preview; saved to `~/.config/linux-pop-extension/settings.conf`
+- **Settings**: panel running-count font size (10–28 pt), live preview; saved to `~/.config/io.github.vaulttec_dev.CosmicContainers/settings.conf` (migrated automatically from `~/.config/linux-pop-extension/` when present)
 - Auto-refresh every 5 seconds (panel count + open popup)
 
 ## Development
@@ -82,7 +106,7 @@ cargo test --lib --no-default-features && cargo test --all-features
 
 | Item | Description |
 |------|-------------|
-| `APP_ID` | Desktop entry ID: `dev.linuxpop.Extension` |
+| `APP_ID` | Desktop entry ID: `io.github.vaulttec_dev.CosmicContainers` |
 | `ContainerSummary` | Parsed `name` + `state` from `docker ps` |
 | `parse_ps_output` | Parse CLI stdout (`name\|state` per line) |
 | `running_count` | Count containers with `running` state |

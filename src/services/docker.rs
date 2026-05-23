@@ -5,7 +5,14 @@ use crate::{ContainerGroup, ContainerSummary, STANDALONE_GROUP, parse_ps_output}
 const PS_FORMAT: &str = r#"{{.Names}}|{{.State}}|{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.service"}}"#;
 
 pub(crate) async fn run_docker(args: &[&str]) -> Result<std::process::Output, String> {
-    tokio::process::Command::new("docker")
+    let mut command = if std::env::var_os("FLATPAK_ID").is_some() {
+        let mut cmd = tokio::process::Command::new("flatpak-spawn");
+        cmd.arg("--host").arg("docker");
+        cmd
+    } else {
+        tokio::process::Command::new("docker")
+    };
+    command
         .args(args)
         .output()
         .await

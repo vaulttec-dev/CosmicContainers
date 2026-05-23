@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PREFIX="${PREFIX:-$HOME/.local}"
 NAME="linux-pop-extension"
-APP_ID="dev.linuxpop.Extension"
+APP_ID="io.github.vaulttec_dev.CosmicContainers"
 
 echo "Building release binary..."
 cargo build --release --manifest-path "$ROOT/Cargo.toml"

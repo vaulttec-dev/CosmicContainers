@@ -1,11 +1,12 @@
 //! Shared domain types and constants for the panel applet.
 
 /// Desktop entry / application ID (reverse domain notation).
-pub const APP_ID: &str = "dev.linuxpop.Extension";
+pub const APP_ID: &str = "io.github.vaulttec_dev.CosmicContainers";
 
 /// Official Docker mark (brand blue `#2496ED`), same as app icon in settings.
-pub const DOCKER_ICON_SVG: &[u8] =
-    include_bytes!("../resources/icons/hicolor/scalable/apps/dev.linuxpop.Extension.svg");
+pub const DOCKER_ICON_SVG: &[u8] = include_bytes!(
+    "../resources/icons/hicolor/scalable/apps/io.github.vaulttec_dev.CosmicContainers.svg"
+);
 
 /// Label for containers not started by Docker Compose (like Docker Desktop).
 pub const STANDALONE_GROUP: &str = "Standalone";

@@ -2,7 +2,7 @@
 Name=Cosmic Containers
 Comment=Docker container manager on the COSMIC panel
 Type=Application
-Icon=dev.linuxpop.Extension
+Icon=io.github.vaulttec_dev.CosmicContainers
 Exec=linux-pop-extension
 Terminal=false
 StartupNotify=true
