@@ -40,7 +40,7 @@
           "type": "git",
           "url": "https://github.com/vaulttec-dev/linux-pop-extension.git",
           "tag": "v0.1.0",
-          "commit": "d6ad1384b9d8598946829dad3e34ce26bc433b6c"
+          "commit": "0a27e637e74b7d75ad759a6db28e2bbf1f92da36"
         },
         "cargo-sources.json"
       ]
