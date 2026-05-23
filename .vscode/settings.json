@@ -33,7 +33,17 @@
       "command": "cargo audit"
     }
   ],
-  "devManager.quality.skipDirs": ["target"],
+  "devManager.quality.skipDirs": [
+    "target",
+    "build-dir",
+    ".flatpak-builder",
+    "flatpak-build",
+    "cosmic-repo-test",
+    "build-cosmic",
+    "build-cosmic-git",
+    "cosmic-build-log",
+    "repo"
+  ],
   "devManager.git.defaultBranch": "master",
   "devManager.ci.workflowsPath": ".github/workflows",
   "devManager.workflows.custom": [
