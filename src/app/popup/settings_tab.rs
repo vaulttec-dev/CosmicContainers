@@ -21,21 +21,21 @@ pub(super) fn settings_tab<'a>(state: &'a App) -> Element<'a, Message> {
 
     widget::column![
         item_labels(
-            "Running count font size".to_string(),
-            format!("Panel badge ({MIN_PANEL_COUNT_FONT_SIZE}–{MAX_PANEL_COUNT_FONT_SIZE})"),
+            "Розмір шрифту лічильника".to_string(),
+            format!("Значок на панелі ({MIN_PANEL_COUNT_FONT_SIZE}–{MAX_PANEL_COUNT_FONT_SIZE})"),
         ),
         widget::spin_button(
             format!("{size} pt"),
-            "Running count font size",
+            "Розмір шрифту лічильника",
             size as i32,
             1,
             i32::from(MIN_PANEL_COUNT_FONT_SIZE),
             i32::from(MAX_PANEL_COUNT_FONT_SIZE),
             |value| Message::PanelCountFontSizeChanged(value as u16),
         ),
-        widget::text("Preview").size(FONT_PRIMARY),
+        widget::text("Попередній перегляд").size(FONT_PRIMARY),
         preview,
-        widget::button::text("Reset to default")
+        widget::button::text("Скинути до типового")
             .on_press(Message::PanelCountFontSizeChanged(
                 DEFAULT_PANEL_COUNT_FONT_SIZE,
             ))

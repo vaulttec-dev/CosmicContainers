@@ -1,8 +1,6 @@
 [Desktop Entry]
 Name=Cosmic Containers
-Name[uk]=Cosmic Containers
-Comment=Docker container manager on the COSMIC panel
-Comment[uk]=Менеджер Docker-контейнерів на панелі COSMIC
+Comment=Менеджер Docker-контейнерів на панелі COSMIC
 Type=Application
 Icon=dev.linuxpop.Extension
 Exec=linux-pop-extension

@@ -14,7 +14,6 @@ impl App {
             Message::Poll => self.poll_lists(),
             Message::Refresh => self.refresh_active_tab(),
             Message::TabSelected(tab) => self.select_tab(tab),
-            Message::ToggleRunningOnly => self.toggle_running_filter(),
             Message::ToggleGroupCollapse(project) => self.toggle_group_collapse(project),
             Message::RequestRemove(target) => self.request_remove(target),
             Message::CancelRemove => self.cancel_remove(),
@@ -119,12 +118,6 @@ impl App {
         } else if self.active_tab == PopupTab::Settings {
             self.error = None;
         }
-        Task::none()
-    }
-
-    fn toggle_running_filter(&mut self) -> Task<Message> {
-        self.running_only = !self.running_only;
-        self.rebuild_groups();
         Task::none()
     }
 

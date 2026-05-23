@@ -12,5 +12,4 @@ fn embedded_action_icons_are_valid_svg() {
     assert_svg(action_icons::STOP);
     assert_svg(action_icons::RELOAD);
     assert_svg(action_icons::DELETE);
-    assert_svg(action_icons::HIDE);
 }

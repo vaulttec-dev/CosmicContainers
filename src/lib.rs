@@ -7,7 +7,7 @@ pub mod services;
 pub mod settings;
 pub mod types;
 
-pub use grouping::{filter_containers, group_containers, running_count};
+pub use grouping::{group_containers, running_count};
 pub use parse::{parse_images_output, parse_ps_output, parse_volumes_output};
 pub use settings::{
     DEFAULT_PANEL_COUNT_FONT_SIZE, MAX_PANEL_COUNT_FONT_SIZE, MIN_PANEL_COUNT_FONT_SIZE,

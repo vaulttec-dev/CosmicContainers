@@ -13,7 +13,7 @@ use crate::app::PendingRemove;
 
 pub(super) fn images_tab<'a>(state: &'a App) -> Element<'a, Message> {
     if state.image_list.is_empty() && !state.loading && state.error.is_none() {
-        return empty_state("No images");
+        return empty_state("Немає образів");
     }
 
     let mut list = widget::column![].spacing(SPACING_NONE);
@@ -29,7 +29,7 @@ fn image_row<'a>(
 ) -> Element<'a, Message> {
     let id = image.id.clone();
     if matches!(pending_remove, Some(PendingRemove::Image(i)) if i == &id) {
-        return remove_confirm_row(format!("Remove image {id}?"));
+        return remove_confirm_row(format!("Видалити образ {id}?"));
     }
 
     let actions = widget::row![action_svg_button(

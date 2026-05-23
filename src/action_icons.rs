@@ -11,6 +11,3 @@ pub const RELOAD: &[u8] = include_bytes!("../resources/icons/actions/reload-circ
 
 /// https://www.svgrepo.com/svg/533020/trash-list-alt
 pub const DELETE: &[u8] = include_bytes!("../resources/icons/actions/trash-list-alt.svg");
-
-/// https://www.svgrepo.com/svg/498962/hide
-pub const HIDE: &[u8] = include_bytes!("../resources/icons/actions/hide.svg");

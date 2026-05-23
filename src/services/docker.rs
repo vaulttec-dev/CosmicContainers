@@ -18,9 +18,10 @@ pub(crate) fn format_cli_failure_public(stderr: &str, hint: &str) -> String {
 
 fn format_spawn_error(err: &std::io::Error) -> String {
     if err.kind() == std::io::ErrorKind::NotFound {
-        return "Docker not found. Install Docker and ensure `docker` is in PATH.".into();
+        return "Docker не знайдено. Встановіть Docker і переконайтеся, що `docker` є в PATH."
+            .into();
     }
-    format!("Failed to run docker: {err}")
+    format!("Не вдалося запустити docker: {err}")
 }
 
 fn format_cli_failure(stderr: &str, hint: &str) -> String {
@@ -32,7 +33,7 @@ fn format_cli_failure(stderr: &str, hint: &str) -> String {
         || stderr.contains("Cannot connect to the Docker daemon")
     {
         return format!(
-            "{stderr}\n\nHint: add your user to the `docker` group or use rootless Docker."
+            "{stderr}\n\nПідказка: додайте користувача до групи `docker` або використовуйте rootless Docker."
         );
     }
     stderr.to_string()
@@ -45,7 +46,7 @@ pub async fn list_containers() -> Result<Vec<ContainerSummary>, String> {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format_cli_failure(
             &stderr,
-            "docker ps failed. Is the Docker daemon running?",
+            "docker ps не вдався. Чи запущений демон Docker?",
         ));
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -59,7 +60,7 @@ pub async fn start_container(name: &str) -> Result<(), String> {
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
-    Err(format_cli_failure(&stderr, "docker start failed"))
+    Err(format_cli_failure(&stderr, "docker start не вдався"))
 }
 
 /// Stop a container by name.
@@ -69,7 +70,7 @@ pub async fn stop_container(name: &str) -> Result<(), String> {
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
-    Err(format_cli_failure(&stderr, "docker stop failed"))
+    Err(format_cli_failure(&stderr, "docker stop не вдався"))
 }
 
 /// Restart a container by name.
@@ -79,7 +80,7 @@ pub async fn restart_container(name: &str) -> Result<(), String> {
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
-    Err(format_cli_failure(&stderr, "docker restart failed"))
+    Err(format_cli_failure(&stderr, "docker restart не вдався"))
 }
 
 /// Start or stop, then refresh the container list.
@@ -145,7 +146,7 @@ pub async fn start_group(group: &ContainerGroup) -> Result<(), String> {
 
     Err(format_cli_failure(
         &stderr,
-        "docker compose start failed for this project",
+        "docker compose start не вдався для цього проєкту",
     ))
 }
 
@@ -170,7 +171,7 @@ pub async fn stop_group(group: &ContainerGroup) -> Result<(), String> {
 
     Err(format_cli_failure(
         &stderr,
-        "docker compose stop failed for this project",
+        "docker compose stop не вдався для цього проєкту",
     ))
 }
 
@@ -205,7 +206,7 @@ pub async fn restart_group(group: &ContainerGroup) -> Result<(), String> {
 
     Err(format_cli_failure(
         &stderr,
-        "docker compose restart failed for this project",
+        "docker compose restart не вдався для цього проєкту",
     ))
 }
 
@@ -223,7 +224,7 @@ pub async fn remove_container(name: &str) -> Result<(), String> {
         return Ok(());
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
-    Err(format_cli_failure(&stderr, "docker rm failed"))
+    Err(format_cli_failure(&stderr, "docker rm не вдався"))
 }
 
 pub async fn remove_then_list(name: String) -> Result<Vec<ContainerSummary>, String> {

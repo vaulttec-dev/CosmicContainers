@@ -8,7 +8,7 @@ pub const DOCKER_ICON_SVG: &[u8] =
     include_bytes!("../resources/icons/hicolor/scalable/apps/dev.linuxpop.Extension.svg");
 
 /// Label for containers not started by Docker Compose (like Docker Desktop).
-pub const STANDALONE_GROUP: &str = "Standalone";
+pub const STANDALONE_GROUP: &str = "Окремі";
 
 /// Auto-refresh interval for panel and popup lists.
 pub const POLL_INTERVAL_SECS: u64 = 5;

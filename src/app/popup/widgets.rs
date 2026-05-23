@@ -127,10 +127,10 @@ pub(super) fn remove_confirm_row<'a>(prompt: String) -> Element<'a, Message> {
             widget::text(prompt)
                 .width(Length::FillPortion(FILL_PORTION_PROMPT))
                 .size(FONT_PRIMARY),
-            widget::button::destructive("Yes")
+            widget::button::destructive("Так")
                 .on_press(Message::ConfirmRemove)
                 .padding(PAD_CONFIRM_BUTTON),
-            widget::button::text("No")
+            widget::button::text("Ні")
                 .on_press(Message::CancelRemove)
                 .padding(PAD_CONFIRM_BUTTON),
         ]

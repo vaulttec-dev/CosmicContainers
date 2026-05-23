@@ -4,10 +4,10 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>Cosmic Containers</name>
-  <summary>Docker container manager for the COSMIC panel</summary>
+  <summary>Менеджер Docker-контейнерів на панелі COSMIC</summary>
   <description>
-    <p>Panel applet for Pop!_OS COSMIC: shows how many Docker containers are running, lists all containers in a popup, and lets you start or stop them without a terminal.</p>
-    <p>Requires the Docker CLI and a running Docker daemon.</p>
+    <p>Віджет панелі Pop!_OS COSMIC: показує кількість запущених Docker-контейнерів, відображає список у спливаючому вікні та дозволяє запускати й зупиняти їх без термінала.</p>
+    <p>Потрібні CLI Docker і запущений демон Docker.</p>
   </description>
   <launchable type="desktop-id">dev.linuxpop.Extension.desktop</launchable>
   <provides>

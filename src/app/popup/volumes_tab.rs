@@ -13,7 +13,7 @@ use crate::app::PendingRemove;
 
 pub(super) fn volumes_tab<'a>(state: &'a App) -> Element<'a, Message> {
     if state.volume_list.is_empty() && !state.loading && state.error.is_none() {
-        return empty_state("No volumes");
+        return empty_state("Немає томів");
     }
 
     let mut list = widget::column![].spacing(SPACING_NONE);
@@ -29,7 +29,7 @@ fn volume_row<'a>(
 ) -> Element<'a, Message> {
     let name = volume.name.clone();
     if matches!(pending_remove, Some(PendingRemove::Volume(n)) if n == &name) {
-        return remove_confirm_row(format!("Remove volume {name}?"));
+        return remove_confirm_row(format!("Видалити том {name}?"));
     }
 
     let actions = widget::row![action_svg_button(

@@ -12,7 +12,7 @@ use cosmic::iced::window;
 use cosmic::iced::window::Id;
 use linux_pop_extension::{
     ContainerGroup, ContainerSummary, ImageSummary, POLL_INTERVAL_SECS, PopupTab, UserSettings,
-    VolumeSummary, filter_containers, group_containers, running_count, settings,
+    VolumeSummary, group_containers, running_count, settings,
 };
 
 pub use popup::POPUP_HEIGHT;
@@ -36,7 +36,6 @@ pub struct App {
     pub(super) groups: Vec<ContainerGroup>,
     pub(super) image_list: Vec<ImageSummary>,
     pub(super) volume_list: Vec<VolumeSummary>,
-    pub(super) running_only: bool,
     pub(super) collapsed_groups: HashSet<String>,
     pub(super) pending_remove: Option<PendingRemove>,
     pub(super) loading: bool,
@@ -52,7 +51,6 @@ pub enum Message {
     Poll,
     Refresh,
     TabSelected(PopupTab),
-    ToggleRunningOnly,
     ToggleGroupCollapse(String),
     RequestRemove(PendingRemove),
     ConfirmRemove,
@@ -86,12 +84,8 @@ impl App {
         format!("{}", running_count(&self.containers))
     }
 
-    pub(super) fn visible_containers(&self) -> Vec<ContainerSummary> {
-        filter_containers(self.containers.clone(), self.running_only)
-    }
-
     pub(super) fn rebuild_groups(&mut self) {
-        self.groups = group_containers(self.visible_containers());
+        self.groups = group_containers(self.containers.clone());
     }
 
     pub(super) fn apply_containers(
