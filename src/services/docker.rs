@@ -35,6 +35,11 @@ fn format_cli_failure(stderr: &str, hint: &str) -> String {
     if stderr.is_empty() {
         return hint.to_string();
     }
+    if stderr.contains("org.freedesktop.Flatpak") {
+        return format!(
+            "{stderr}\n\nHint: reinstall the Flatpak build with `--talk-name=org.freedesktop.Flatpak` in the manifest."
+        );
+    }
     if stderr.contains("permission denied")
         || stderr.contains("Cannot connect to the Docker daemon")
     {
