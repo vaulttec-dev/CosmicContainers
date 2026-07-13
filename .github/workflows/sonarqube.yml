@@ -1,0 +1,128 @@
+name: SonarQube
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: sonarqube-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan:
+    name: 📡 SonarQube
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+          # Full history for accurate blame/new-code detection
+          fetch-depth: 0
+
+      # sonar.qualitygate.wait=false: the gate result stays visible on the
+      # dashboard and in the PR comment below without blocking CI on it.
+      # PR analysis relies on the community-branch-plugin on the server.
+      - name: 📡 Scan (PR analysis)
+        if: github.event_name == 'pull_request'
+        uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+            -Dsonar.pullrequest.branch=${{ github.head_ref }}
+            -Dsonar.pullrequest.base=${{ github.base_ref }}
+            -Dsonar.qualitygate.wait=false
+
+      - name: 📡 Scan (branch analysis)
+        if: github.event_name != 'pull_request'
+        uses: sonarsource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.branch.name=${{ github.ref_name }}
+            -Dsonar.qualitygate.wait=false
+
+      # Sticky PR comment (updated in place, not re-posted) with the findings
+      - name: 💬 Comment findings on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          PROJECT_KEY: linux-pop-extension
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # The scan step does not wait on sonar.qualitygate.wait, so the gate
+          # may still be computing server-side when this step starts — poll
+          # briefly instead of a single immediate check.
+          GATE="UNAVAILABLE"
+          for _ in $(seq 1 12); do
+            if RESP=$(curl -sf -u "$SONAR_TOKEN:" \
+              "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=$PROJECT_KEY&pullRequest=$PR_NUMBER"); then
+              GATE=$(echo "$RESP" | jq -r '.projectStatus.status // "NONE"')
+              [ "$GATE" != "NONE" ] && break
+            fi
+            sleep 5
+          done
+
+          ISSUES_FILE=$(mktemp)
+          if ! curl -sf -u "$SONAR_TOKEN:" \
+            "$SONAR_HOST_URL/api/issues/search?components=$PROJECT_KEY&pullRequest=$PR_NUMBER&resolved=false&ps=100" \
+            > "$ISSUES_FILE"; then
+            echo "::warning::SonarQube API unavailable — skipping PR comment"
+            exit 0
+          fi
+
+          case "$GATE" in
+            OK)    GATE_LINE="✅ Quality gate: **пройдено**" ;;
+            ERROR) GATE_LINE="❌ Quality gate: **не пройдено**" ;;
+            *)     GATE_LINE="ℹ️ Quality gate: $GATE" ;;
+          esac
+
+          BODY_FILE=$(mktemp)
+          {
+            echo "<!-- sonarqube-report -->"
+            echo "## 📡 SonarQube — якість коду"
+            echo ""
+            echo "$GATE_LINE"
+            echo ""
+            jq -r --arg key "$PROJECT_KEY" '
+              (.issues // []) as $i
+              | if ($i | length) == 0 then
+                  "✅ Зауважень у змінених файлах немає."
+                else
+                  ( $i | sort_by({BLOCKER:0, CRITICAL:1, MAJOR:2, MINOR:3, INFO:4}[.severity] // 5) ) as $s
+                  | "Знайдено **\($s | length)** зауважень:\n\n" +
+                    "| Серйозність | Файл | Зауваження |\n|---|---|---|\n" +
+                    ( [ $s[:20][] | "| \(.severity) | `\(.component | sub("^" + $key + ":"; ""))\(if .line then ":\(.line)" else "" end)` | \(.message | gsub("\\|"; "\\\\|")) |" ] | join("\n") ) +
+                    (if ($s|length) > 20 then "\n\n…і ще \(($s|length)-20) зауважень — повний список у SonarQube." else "" end)
+                end
+            ' "$ISSUES_FILE"
+            echo ""
+            echo "_Повний звіт: [SonarQube]($SONAR_HOST_URL/dashboard?id=$PROJECT_KEY&pullRequest=$PR_NUMBER) · [лог запуску]($RUN_URL)_"
+          } > "$BODY_FILE"
+
+          COMMENT_ID=$(gh api "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- sonarqube-report -->"))][0].id // empty')
+          if [ -n "$COMMENT_ID" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$COMMENT_ID" -F body=@"$BODY_FILE" > /dev/null
+            echo "Updated existing SonarQube comment (id=$COMMENT_ID)"
+          else
+            gh api "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" -F body=@"$BODY_FILE" > /dev/null
+            echo "Posted new SonarQube comment"
+          fi
