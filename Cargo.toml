@@ -1,0 +1,28 @@
+[package]
+name = "cosmic-containers"
+version = "0.2.0"
+edition = "2024"
+license = "MIT"
+description = "COSMIC panel applet for Pop!_OS — Docker container manager on the panel"
+readme = "README.md"
+
+[features]
+default = ["applet"]
+applet = ["dep:libcosmic"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "cosmic-containers"
+path = "src/main.rs"
+required-features = ["applet"]
+
+[dependencies]
+tokio = { version = "1", features = ["process", "rt"] }
+libcosmic = { git = "https://github.com/pop-os/libcosmic.git", optional = true, features = [
+    "applet",
+    "tokio",
+    "wayland",
+    "winit",
+] }

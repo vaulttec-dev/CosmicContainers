@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.vaulttec_dev.CosmicContainers</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <project_group>COSMIC</project_group>
+  <content_rating type="oars-1.1" />
+  <developer id="io.github.vaulttec_dev">
+    <name>vaulttec-dev</name>
+  </developer>
+  <name>Cosmic Containers</name>
+  <summary>Docker container manager for the COSMIC panel</summary>
+  <description>
+    <p>Panel applet for Pop!_OS COSMIC: shows how many Docker containers are running, lists all containers in a popup, and lets you start or stop them without a terminal.</p>
+    <p>Requires the Docker CLI and a running Docker daemon on the host.</p>
+  </description>
+  <launchable type="desktop-id">io.github.vaulttec_dev.CosmicContainers.desktop</launchable>
+  <icon type="stock">io.github.vaulttec_dev.CosmicContainers</icon>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/vaulttec-dev/CosmicContainers/master/resources/screenshots/popup-containers.png</image>
+      <caption>Containers grouped by Compose project, with published ports and start, restart, and delete actions</caption>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/vaulttec-dev/CosmicContainers</url>
+  <url type="bugtracker">https://github.com/vaulttec-dev/CosmicContainers/issues</url>
+  <url type="vcs-browser">https://github.com/vaulttec-dev/CosmicContainers</url>
+  <provides>
+    <id>com.system76.CosmicApplet</id>
+    <binary>cosmic-containers</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>Development</category>
+  </categories>
+  <keywords>
+    <keyword>COSMIC</keyword>
+    <keyword>applet</keyword>
+    <keyword>Docker</keyword>
+    <keyword>containers</keyword>
+  </keywords>
+  <releases>
+    <release version="0.2.0" date="2026-07-25">
+      <url type="details">https://github.com/vaulttec-dev/CosmicContainers/releases/tag/v0.2.0</url>
+      <description>
+        <p>Adds a per-tab clean action, published ports and live CPU/RAM usage per container, and a larger popup. Fixes settings not persisting inside Flatpak and the panel count being clipped.</p>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-05-23">
+      <url type="details">https://github.com/vaulttec-dev/CosmicContainers/releases/tag/v0.1.0</url>
+      <description>
+        <p>Initial release: manage Docker containers, images, and volumes from the COSMIC panel.</p>
+      </description>
+    </release>
+  </releases>
+</component>

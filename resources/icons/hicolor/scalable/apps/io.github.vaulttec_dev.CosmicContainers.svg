@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Cosmic Containers</title>
+  <rect width="128" height="128" rx="28" fill="#4C5FD5"/>
+  <g fill="#ffffff">
+    <rect x="24" y="64" width="34" height="34" rx="6"/>
+    <rect x="70" y="64" width="34" height="34" rx="6"/>
+    <rect x="47" y="24" width="34" height="34" rx="6"/>
+  </g>
+  <g fill="#4C5FD5" opacity="0.55">
+    <rect x="30" y="74" width="22" height="5" rx="2.5"/>
+    <rect x="76" y="74" width="22" height="5" rx="2.5"/>
+    <rect x="53" y="34" width="22" height="5" rx="2.5"/>
+  </g>
+</svg>

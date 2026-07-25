@@ -1,0 +1,42 @@
+# Rust / Cargo
+/target/
+**/*.rs.bk
+
+# SnakeFlow (transient pre-commit / quality state)
+.snakeflow/
+
+# Local editor & agent config (do not commit secrets or machine-specific prefs)
+.claude/settings.local.json
+*.swp
+*~
+
+# Environment & secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+credentials.json
+secrets.json
+secrets.yaml
+secrets.yml
+service-account*.json
+.netrc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flatpak / build artifacts (when added later)
+.flatpak-builder/
+flatpak-build/
+build-dir/
+cosmic-repo-test/
+build-cosmic/
+build-cosmic-git/
+cosmic-build-log/
+repo/
+.claude/
