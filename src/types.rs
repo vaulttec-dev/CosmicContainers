@@ -50,6 +50,7 @@ pub enum PopupTab {
     Containers,
     Images,
     Volumes,
+    Ports,
     Settings,
 }
 
@@ -60,7 +61,7 @@ impl PopupTab {
             PopupTab::Containers => Some("Remove all stopped containers?"),
             PopupTab::Images => Some("Remove all unused images?"),
             PopupTab::Volumes => Some("Remove all unused volumes?"),
-            PopupTab::Settings => None,
+            PopupTab::Ports | PopupTab::Settings => None,
         }
     }
 }
@@ -100,6 +101,15 @@ impl ContainerSummary {
         }
     }
 
+    /// True when this container publishes `port` on the host (`0.0.0.0:8080->80/tcp` → `8080`).
+    pub fn publishes_host_port(&self, port: u16) -> bool {
+        let Some(raw) = self.ports.as_deref() else {
+            return false;
+        };
+        raw.split(',')
+            .any(|part| mapping_covers_host_port(part.trim(), port))
+    }
+
     pub fn group_label(&self) -> &str {
         self.compose_project
             .as_deref()
@@ -113,6 +123,24 @@ impl ContainerSummary {
             Some(service) if !service.is_empty() => format!("{service} ({})", self.name),
             _ => self.name.clone(),
         }
+    }
+}
+
+/// True when the host side of one mapping covers `port`.
+///
+/// Docker publishes ranges as a single entry (`0.0.0.0:9000-9001->9000-9001/tcp`),
+/// so both endpoints have to be considered, not just a plain port number.
+fn mapping_covers_host_port(part: &str, port: u16) -> bool {
+    let Some((host, _)) = part.split_once("->") else {
+        return false;
+    };
+    let host = host.rsplit(':').next().unwrap_or(host).trim();
+    match host.split_once('-') {
+        Some((first, last)) => match (first.parse::<u16>(), last.parse::<u16>()) {
+            (Ok(first), Ok(last)) => (first..=last).contains(&port),
+            _ => false,
+        },
+        None => host.parse() == Ok(port),
     }
 }
 
@@ -180,6 +208,50 @@ impl ContainerStats {
     /// Single-line resource label for the container row.
     pub fn usage_line(&self) -> String {
         format!("CPU {} · RAM {}", self.cpu, self.memory)
+    }
+}
+
+/// One listening socket from `ss -tulpn`, IPv4/IPv6 rows of the same port merged.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PortEntry {
+    pub port: u16,
+    /// `tcp` or `udp`, as reported by `ss`.
+    pub protocol: String,
+    /// Bind addresses seen for this port (`0.0.0.0`, `[::]`, `127.0.0.1`).
+    pub addresses: Vec<String>,
+    /// Process name; absent when the socket belongs to another user (root).
+    pub process: Option<String>,
+    pub pid: Option<u32>,
+}
+
+impl PortEntry {
+    pub fn title(&self) -> String {
+        format!("{}/{}", self.port, self.protocol)
+    }
+
+    /// Who holds the port: a container, a killable process, or an unreadable owner.
+    pub fn owner_line(&self, container: Option<&str>) -> String {
+        if let Some(container) = container {
+            return format!("Docker · {container}");
+        }
+        match (&self.process, self.pid) {
+            (Some(process), Some(pid)) => format!("{process} · PID {pid}"),
+            (None, Some(pid)) => format!("PID {pid}"),
+            _ => "PID hidden (owned by another user)".to_string(),
+        }
+    }
+
+    pub fn address_line(&self) -> String {
+        self.addresses.join(", ")
+    }
+
+    /// Label used in the kill confirmation prompt.
+    pub fn kill_label(&self) -> String {
+        match (&self.process, self.pid) {
+            (Some(process), Some(pid)) => format!("{process} (PID {pid}) on {}", self.title()),
+            (_, Some(pid)) => format!("PID {pid} on {}", self.title()),
+            _ => self.title(),
+        }
     }
 }
 

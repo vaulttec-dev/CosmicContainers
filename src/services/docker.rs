@@ -6,19 +6,24 @@ use crate::{
 
 const PS_FORMAT: &str = r#"{{.Names}}|{{.State}}|{{.Label "com.docker.compose.project"}}|{{.Label "com.docker.compose.service"}}|{{.Ports}}"#;
 
-pub(crate) async fn run_docker(args: &[&str]) -> Result<std::process::Output, String> {
+/// Run a host binary, escaping the sandbox when packaged as a Flatpak.
+pub(crate) async fn run_host(program: &str, args: &[&str]) -> Result<std::process::Output, String> {
     let mut command = if std::env::var_os("FLATPAK_ID").is_some() {
         let mut cmd = tokio::process::Command::new("flatpak-spawn");
-        cmd.arg("--host").arg("docker");
+        cmd.arg("--host").arg(program);
         cmd
     } else {
-        tokio::process::Command::new("docker")
+        tokio::process::Command::new(program)
     };
     command
         .args(args)
         .output()
         .await
-        .map_err(|e| format_spawn_error(&e))
+        .map_err(|e| format_spawn_error(program, &e))
+}
+
+pub(crate) async fn run_docker(args: &[&str]) -> Result<std::process::Output, String> {
+    run_host("docker", args).await
 }
 
 pub(crate) fn format_cli_failure_public(stderr: &str, hint: &str) -> String {
@@ -34,11 +39,14 @@ pub(crate) fn reclaimed_summary(stdout: &str, fallback: &str) -> String {
         .map_or_else(|| fallback.to_string(), str::to_string)
 }
 
-fn format_spawn_error(err: &std::io::Error) -> String {
+fn format_spawn_error(program: &str, err: &std::io::Error) -> String {
     if err.kind() == std::io::ErrorKind::NotFound {
-        return "Docker not found. Install Docker and ensure `docker` is in PATH.".into();
+        return match program {
+            "docker" => "Docker not found. Install Docker and ensure `docker` is in PATH.".into(),
+            other => format!("`{other}` not found in PATH."),
+        };
     }
-    format!("Failed to run docker: {err}")
+    format!("Failed to run {program}: {err}")
 }
 
 fn format_cli_failure(stderr: &str, hint: &str) -> String {

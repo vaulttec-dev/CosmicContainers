@@ -12,7 +12,7 @@ use cosmic::iced::window;
 use cosmic::iced::window::Id;
 use cosmic_containers::{
     ContainerGroup, ContainerStats, ContainerSummary, ImageSummary, POLL_INTERVAL_SECS, PopupTab,
-    UserSettings, VolumeSummary, group_containers, running_count, settings,
+    PortEntry, UserSettings, VolumeSummary, group_containers, running_count, settings,
 };
 
 pub use popup::POPUP_HEIGHT;
@@ -26,12 +26,20 @@ pub enum PendingRemove {
     Volume(String),
 }
 
+/// Process awaiting kill confirmation in the ports tab.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PendingKill {
+    pub pid: u32,
+    pub label: String,
+}
+
 /// Per-tab zero-based page index for paginated list tabs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) struct TabPages {
     pub(super) containers: usize,
     pub(super) images: usize,
     pub(super) volumes: usize,
+    pub(super) ports: usize,
 }
 
 impl TabPages {
@@ -40,6 +48,7 @@ impl TabPages {
             PopupTab::Containers => Some(&mut self.containers),
             PopupTab::Images => Some(&mut self.images),
             PopupTab::Volumes => Some(&mut self.volumes),
+            PopupTab::Ports => Some(&mut self.ports),
             PopupTab::Settings => None,
         }
     }
@@ -55,10 +64,12 @@ pub struct App {
     pub(super) groups: Vec<ContainerGroup>,
     pub(super) image_list: Vec<ImageSummary>,
     pub(super) volume_list: Vec<VolumeSummary>,
+    pub(super) port_list: Vec<PortEntry>,
     pub(super) container_stats: HashMap<String, ContainerStats>,
     pub(super) collapsed_groups: HashSet<String>,
     pub(super) tab_pages: TabPages,
     pub(super) pending_remove: Option<PendingRemove>,
+    pub(super) pending_kill: Option<PendingKill>,
     pub(super) pending_prune: bool,
     pub(super) notice: Option<String>,
     pub(super) loading: bool,
@@ -79,6 +90,10 @@ pub enum Message {
     RequestRemove(PendingRemove),
     ConfirmRemove,
     CancelRemove,
+    RequestKill(PendingKill),
+    ConfirmKill { force: bool },
+    CancelKill,
+    StopContainerPort(String),
     RequestPrune,
     ConfirmPrune,
     CancelPrune,
@@ -94,6 +109,10 @@ pub enum Message {
     },
     VolumesLoaded {
         result: Result<Vec<VolumeSummary>, String>,
+        silent: bool,
+    },
+    PortsLoaded {
+        result: Result<Vec<PortEntry>, String>,
         silent: bool,
     },
     Start(String),
@@ -124,14 +143,22 @@ impl App {
         })
     }
 
+    /// Rows a paginated tab currently holds (`None` for tabs without a list).
+    pub(super) fn tab_item_count(&self, tab: PopupTab) -> Option<usize> {
+        match tab {
+            PopupTab::Containers => Some(self.container_row_count()),
+            PopupTab::Images => Some(self.image_list.len()),
+            PopupTab::Volumes => Some(self.volume_list.len()),
+            PopupTab::Ports => Some(self.port_list.len()),
+            PopupTab::Settings => None,
+        }
+    }
+
     pub(super) fn clamp_tab_page(&mut self, tab: PopupTab) {
         use cosmic_containers::{LIST_PAGE_SIZE, clamp_page, total_pages};
 
-        let item_count = match tab {
-            PopupTab::Containers => self.container_row_count(),
-            PopupTab::Images => self.image_list.len(),
-            PopupTab::Volumes => self.volume_list.len(),
-            PopupTab::Settings => return,
+        let Some(item_count) = self.tab_item_count(tab) else {
+            return;
         };
         let total = total_pages(item_count, LIST_PAGE_SIZE);
         let Some(page) = self.tab_pages.page_mut(tab) else {
@@ -209,6 +236,35 @@ impl App {
         }
     }
 
+    pub(super) fn apply_ports(&mut self, result: Result<Vec<PortEntry>, String>, silent: bool) {
+        if !silent {
+            self.loading = false;
+        }
+        match result {
+            Ok(port_list) => {
+                self.port_list = port_list;
+                self.clamp_tab_page(PopupTab::Ports);
+                if self.active_tab == PopupTab::Ports {
+                    self.error = None;
+                }
+            }
+            Err(err) => {
+                if self.active_tab == PopupTab::Ports {
+                    self.error = Some(err);
+                }
+            }
+        }
+    }
+
+    /// Running container publishing `port`, if any (`docker-proxy` hides the real owner).
+    pub(super) fn container_for_port(&self, port: u16) -> Option<&str> {
+        self.containers
+            .iter()
+            .filter(|container| container.is_running())
+            .find(|container| container.publishes_host_port(port))
+            .map(|container| container.name.as_str())
+    }
+
     pub(super) fn apply_stats(&mut self, result: Result<Vec<ContainerStats>, String>) {
         // Resource usage is supplementary: a failing `docker stats` must not mask the list.
         self.container_stats = match result {
@@ -229,7 +285,7 @@ impl App {
     }
 
     pub(super) fn fetch_tab_task(tab: PopupTab, silent: bool) -> Task<Message> {
-        use cosmic_containers::services::{docker, images, volumes};
+        use cosmic_containers::services::{docker, images, ports, volumes};
 
         match tab {
             PopupTab::Containers => Task::perform(docker::list_containers(), move |result| {
@@ -240,6 +296,9 @@ impl App {
             }),
             PopupTab::Volumes => Task::perform(volumes::list_volumes(), move |result| {
                 cosmic::Action::App(Message::VolumesLoaded { result, silent })
+            }),
+            PopupTab::Ports => Task::perform(ports::list_ports(), move |result| {
+                cosmic::Action::App(Message::PortsLoaded { result, silent })
             }),
             PopupTab::Settings => Task::none(),
         }

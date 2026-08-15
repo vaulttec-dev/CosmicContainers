@@ -19,7 +19,7 @@ path = "src/main.rs"
 required-features = ["applet"]
 
 [dependencies]
-tokio = { version = "1", features = ["process", "rt"] }
+tokio = { version = "1", features = ["process", "rt", "time"] }
 libcosmic = { git = "https://github.com/pop-os/libcosmic.git", optional = true, features = [
     "applet",
     "tokio",

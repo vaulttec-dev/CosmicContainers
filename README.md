@@ -6,6 +6,7 @@ COSMIC panel applet for **Pop!_OS**: manage Docker containers from the panel —
 
 - **Pop!_OS 24.04+** (or another distro with COSMIC panel)
 - **Docker** CLI (`docker` in `PATH`, daemon running, user in `docker` group or rootless Docker)
+- `ss` from **iproute2** and `kill` from **procps** — both preinstalled on Pop!_OS; required by the **Ports** tab
 - Rust 1.93 or newer (edition 2024; required by `libcosmic`)
 - System libraries for building `libcosmic`:
 
@@ -74,9 +75,10 @@ flatpak-builder --user --install --force-clean build-dir \
 
 In the popup:
 
-- Tabs: **Containers**, **Images**, **Volumes**, **Settings**
+- Tabs: **Containers**, **Images**, **Volumes**, **Ports**, **Settings**
 - **Containers**: grouped by Compose project, **hide stopped** filter (hide icon), collapse groups, icon actions (play / stop / reload / delete), published ports and live CPU / RAM usage (`docker stats`)
 - **Images** / **Volumes**: list with delete (`docker rmi` / `docker volume rm`)
+- **Ports**: every listening TCP/UDP socket on the host (`ss -tulpn`), sorted by port, IPv4/IPv6 rows merged. A port published by a running container is freed with `docker stop`; any other socket is freed by signalling its process — **Kill** sends `SIGTERM`, **Force** sends `SIGKILL`. Sockets owned by another user (root) show no PID and no action, because `ss` cannot reveal their process
 - **Clean** (broom icon, top right): prunes the active tab — stopped containers, unused images (`-a`), or unused volumes; asks for confirmation and reports reclaimed space
 - **Settings**: panel running-count font size (10–28 pt), live preview; saved to `$XDG_CONFIG_HOME/io.github.vaulttec_dev.CosmicContainers/settings.conf` (migrated automatically from `~/.config/linux-pop-extension/` when present)
 - Auto-refresh every 5 seconds (panel count + open popup)

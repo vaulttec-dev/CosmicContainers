@@ -212,6 +212,30 @@ pub(super) fn remove_confirm_row<'a>(prompt: String) -> Element<'a, Message> {
     .into()
 }
 
+/// Kill prompt with both signals: `Kill` sends SIGTERM, `Force` sends SIGKILL.
+pub(super) fn kill_confirm_row<'a>(prompt: String) -> Element<'a, Message> {
+    widget::container(
+        widget::row![
+            widget::text(prompt)
+                .width(Length::FillPortion(FILL_PORTION_PROMPT))
+                .size(FONT_PRIMARY),
+            widget::button::destructive("Kill")
+                .on_press(Message::ConfirmKill { force: false })
+                .padding(PAD_CONFIRM_BUTTON),
+            widget::button::destructive("Force")
+                .on_press(Message::ConfirmKill { force: true })
+                .padding(PAD_CONFIRM_BUTTON),
+            widget::button::text("No")
+                .on_press(Message::CancelKill)
+                .padding(PAD_CONFIRM_BUTTON),
+        ]
+        .align_y(Alignment::Center)
+        .spacing(SPACING_SM),
+    )
+    .padding(PAD_LIST_ROW)
+    .into()
+}
+
 pub(super) fn prune_confirm_row<'a>(prompt: &'static str) -> Element<'a, Message> {
     widget::container(
         widget::row![

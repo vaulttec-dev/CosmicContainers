@@ -1,10 +1,10 @@
 use cosmic::app::Task;
 use cosmic::surface::action::{app_popup, destroy_popup};
 use cosmic_containers::PopupTab;
-use cosmic_containers::services::{docker, images, volumes};
+use cosmic_containers::services::{docker, images, ports, volumes};
 
 use super::popup::popup_view;
-use super::{App, Message, POPUP_HEIGHT, POPUP_WIDTH, PendingRemove};
+use super::{App, Message, POPUP_HEIGHT, POPUP_WIDTH, PendingKill, PendingRemove};
 
 impl App {
     pub(super) fn handle_message(&mut self, message: Message) -> Task<Message> {
@@ -19,6 +19,10 @@ impl App {
             Message::RequestRemove(target) => self.request_remove(target),
             Message::CancelRemove => self.cancel_remove(),
             Message::ConfirmRemove => self.confirm_remove(),
+            Message::RequestKill(target) => self.request_kill(target),
+            Message::CancelKill => self.cancel_kill(),
+            Message::ConfirmKill { force } => self.confirm_kill(force),
+            Message::StopContainerPort(name) => self.stop_container_port(name),
             Message::RequestPrune => self.request_prune(),
             Message::CancelPrune => self.cancel_prune(),
             Message::ConfirmPrune => self.confirm_prune(),
@@ -39,6 +43,10 @@ impl App {
                 self.apply_volumes(result, silent);
                 Task::none()
             }
+            Message::PortsLoaded { result, silent } => {
+                self.apply_ports(result, silent);
+                Task::none()
+            }
             Message::Start(name) => self.run_container_action(docker::start_then_list(name)),
             Message::Stop(name) => self.run_container_action(docker::stop_then_list(name)),
             Message::Restart(name) => self.run_container_action(docker::restart_then_list(name)),
@@ -53,6 +61,7 @@ impl App {
         if self.popup.as_ref() == Some(&id) {
             self.popup = None;
             self.pending_remove = None;
+            self.pending_kill = None;
             self.pending_prune = false;
             self.notice = None;
         }
@@ -62,6 +71,7 @@ impl App {
     fn toggle_popup(&mut self) -> Task<Message> {
         if let Some(id) = self.popup.take() {
             self.pending_remove = None;
+            self.pending_kill = None;
             self.pending_prune = false;
             self.notice = None;
             return cosmic::task::message(cosmic::Action::Cosmic(cosmic::app::Action::Surface(
@@ -111,6 +121,7 @@ impl App {
         self.error = None;
         self.notice = None;
         self.pending_remove = None;
+        self.pending_kill = None;
         self.pending_prune = false;
         if !App::needs_data_fetch(tab) {
             self.loading = false;
@@ -124,11 +135,8 @@ impl App {
         use cosmic_containers::{LIST_PAGE_SIZE, clamp_page, total_pages};
 
         let tab = self.active_tab;
-        let item_count = match tab {
-            PopupTab::Containers => self.container_row_count(),
-            PopupTab::Images => self.image_list.len(),
-            PopupTab::Volumes => self.volume_list.len(),
-            PopupTab::Settings => return Task::none(),
+        let Some(item_count) = self.tab_item_count(tab) else {
+            return Task::none();
         };
         let total = total_pages(item_count, LIST_PAGE_SIZE);
         let Some(page) = self.tab_pages.page_mut(tab) else {
@@ -145,11 +153,8 @@ impl App {
         use cosmic_containers::{LIST_PAGE_SIZE, total_pages};
 
         let tab = self.active_tab;
-        let item_count = match tab {
-            PopupTab::Containers => self.container_row_count(),
-            PopupTab::Images => self.image_list.len(),
-            PopupTab::Volumes => self.volume_list.len(),
-            PopupTab::Settings => return Task::none(),
+        let Some(item_count) = self.tab_item_count(tab) else {
+            return Task::none();
         };
         let total = total_pages(item_count, LIST_PAGE_SIZE);
         let Some(page) = self.tab_pages.page_mut(tab) else {
@@ -183,8 +188,38 @@ impl App {
 
     fn request_remove(&mut self, target: PendingRemove) -> Task<Message> {
         self.pending_prune = false;
+        self.pending_kill = None;
         self.pending_remove = Some(target);
         Task::none()
+    }
+
+    fn request_kill(&mut self, target: PendingKill) -> Task<Message> {
+        self.pending_prune = false;
+        self.pending_remove = None;
+        self.pending_kill = Some(target);
+        Task::none()
+    }
+
+    fn cancel_kill(&mut self) -> Task<Message> {
+        self.pending_kill = None;
+        Task::none()
+    }
+
+    /// Signal the confirmed process, then reload the port list.
+    fn confirm_kill(&mut self, force: bool) -> Task<Message> {
+        let Some(target) = self.pending_kill.take() else {
+            return Task::none();
+        };
+        self.loading = true;
+        self.notice = None;
+        Task::perform(ports::kill_then_list(target.pid, force), ports_loaded)
+    }
+
+    /// Free a published port by stopping its container instead of killing `docker-proxy`.
+    fn stop_container_port(&mut self, name: String) -> Task<Message> {
+        self.loading = true;
+        self.pending_kill = None;
+        Task::perform(ports::stop_container_then_list(name), ports_loaded)
     }
 
     fn request_prune(&mut self) -> Task<Message> {
@@ -192,6 +227,7 @@ impl App {
             return Task::none();
         }
         self.pending_remove = None;
+        self.pending_kill = None;
         self.notice = None;
         self.pending_prune = true;
         Task::none()
@@ -208,7 +244,7 @@ impl App {
             PopupTab::Containers => Task::perform(docker::prune_containers(), prune_completed),
             PopupTab::Images => Task::perform(images::prune_images(), prune_completed),
             PopupTab::Volumes => Task::perform(volumes::prune_volumes(), prune_completed),
-            PopupTab::Settings => return Task::none(),
+            PopupTab::Ports | PopupTab::Settings => return Task::none(),
         };
         self.loading = true;
         prune
@@ -315,6 +351,15 @@ fn volumes_loaded(
     result: Result<Vec<cosmic_containers::VolumeSummary>, String>,
 ) -> cosmic::Action<Message> {
     cosmic::Action::App(Message::VolumesLoaded {
+        result,
+        silent: false,
+    })
+}
+
+fn ports_loaded(
+    result: Result<Vec<cosmic_containers::PortEntry>, String>,
+) -> cosmic::Action<Message> {
+    cosmic::Action::App(Message::PortsLoaded {
         result,
         silent: false,
     })
