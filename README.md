@@ -115,6 +115,8 @@ cargo test --lib --no-default-features && cargo test --all-features
 | `ContainerSummary` | Parsed `name` + `state` from `docker ps` |
 | `parse_ps_output` | Parse CLI stdout (`name\|state` per line) |
 | `running_count` | Count containers with `running` state |
+| `PortEntry` | Listening socket: port, protocol, bind addresses, owning process |
+| `parse_ss_output` | Parse `ss -tulpn` stdout, merging IPv4/IPv6 rows per port |
 
 ## Contributing
 

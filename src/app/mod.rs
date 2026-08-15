@@ -91,7 +91,9 @@ pub enum Message {
     ConfirmRemove,
     CancelRemove,
     RequestKill(PendingKill),
-    ConfirmKill { force: bool },
+    ConfirmKill {
+        force: bool,
+    },
     CancelKill,
     StopContainerPort(String),
     RequestPrune,

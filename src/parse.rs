@@ -192,7 +192,11 @@ pub fn parse_ss_output(stdout: &str) -> Vec<PortEntry> {
             None => entries.push(entry),
         }
     }
-    entries.sort_by(|a, b| a.port.cmp(&b.port).then_with(|| a.protocol.cmp(&b.protocol)));
+    entries.sort_by(|a, b| {
+        a.port
+            .cmp(&b.port)
+            .then_with(|| a.protocol.cmp(&b.protocol))
+    });
     entries
 }
 
@@ -281,7 +285,10 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].addresses, vec!["0.0.0.0", "[::]"]);
         assert_eq!(list[0].pid, None);
-        assert_eq!(list[0].owner_line(None), "PID hidden (owned by another user)");
+        assert_eq!(
+            list[0].owner_line(None),
+            "PID hidden (owned by another user)"
+        );
     }
 
     #[test]
