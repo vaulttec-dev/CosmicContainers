@@ -22,7 +22,6 @@ impl App {
             Message::RequestKill(target) => self.request_kill(target),
             Message::CancelKill => self.cancel_kill(),
             Message::ConfirmKill { force } => self.confirm_kill(force),
-            Message::StopContainerPort(name) => self.stop_container_port(name),
             Message::RequestPrune => self.request_prune(),
             Message::CancelPrune => self.cancel_prune(),
             Message::ConfirmPrune => self.confirm_prune(),
@@ -212,14 +211,21 @@ impl App {
         };
         self.loading = true;
         self.notice = None;
-        Task::perform(ports::kill_then_list(target.pid, force), ports_loaded)
+        Task::perform(ports::kill_then_list(target.target, force), ports_loaded)
     }
 
-    /// Free a published port by stopping its container instead of killing `docker-proxy`.
-    fn stop_container_port(&mut self, name: String) -> Task<Message> {
+    /// Ports tab "clean": SIGTERM every process group currently listed.
+    fn kill_listed_processes(&mut self) -> Task<Message> {
+        let targets = self.dev_targets();
+        if targets.is_empty() {
+            return Task::none();
+        }
         self.loading = true;
-        self.pending_kill = None;
-        Task::perform(ports::stop_container_then_list(name), ports_loaded)
+        self.notice = Some(format!(
+            "Sent SIGTERM to {} process group(s)",
+            targets.len()
+        ));
+        Task::perform(ports::kill_all_then_list(targets), ports_loaded)
     }
 
     fn request_prune(&mut self) -> Task<Message> {
@@ -244,7 +250,8 @@ impl App {
             PopupTab::Containers => Task::perform(docker::prune_containers(), prune_completed),
             PopupTab::Images => Task::perform(images::prune_images(), prune_completed),
             PopupTab::Volumes => Task::perform(volumes::prune_volumes(), prune_completed),
-            PopupTab::Ports | PopupTab::Settings => return Task::none(),
+            PopupTab::Ports => return self.kill_listed_processes(),
+            PopupTab::Settings => return Task::none(),
         };
         self.loading = true;
         prune

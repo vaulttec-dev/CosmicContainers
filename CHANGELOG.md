@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Application icon redrawn: an isometric container cube inside an orbit, replacing the three stacked blocks — the old mark read as a generic grid at panel size
+
 ### Added
 
-- **Ports** tab: listening TCP/UDP sockets on the host (`ss -tulpn`), sorted by port with IPv4/IPv6 rows merged, showing the owning process and PID
-- Free a port from the popup: `docker stop` for ports published by a running container, `kill -TERM` (or `-KILL` via **Force**) for any other process, both behind a confirmation row
+- **Ports** tab: dev servers listening on the host (`ss -tulpn`), sorted by port with IPv4/IPv6 rows merged, showing the owning process and PID
+- Free a port from the popup: `kill -TERM`, or `-KILL` via **Force**, behind a confirmation row
+- Tab-scoped clean on **Ports**: the broom signals every listed entry at once, deduplicated by process group
+- Kill targets the listener's process group (`kill -TERM -- -<pgid>`, group read from `ps`), falling back to the bare PID when unknown: a supervisor (`turbo`, `concurrently`, `tsx --watch`) otherwise respawns the killed child and re-grabs the port
+- The list covers every shape a dev server takes: this user's TCP listeners, the UDP sockets of those same processes (`livekit-server --dev` and other media/QUIC servers bind both), and root-owned TCP above port 1024 (a `sudo`-started server, shown read-only). UDP-only chatter, system services below port 1024, and container-published ports stay out
 
 ## [0.2.0] - 2026-07-25
 

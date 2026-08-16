@@ -61,7 +61,8 @@ impl PopupTab {
             PopupTab::Containers => Some("Remove all stopped containers?"),
             PopupTab::Images => Some("Remove all unused images?"),
             PopupTab::Volumes => Some("Remove all unused volumes?"),
-            PopupTab::Ports | PopupTab::Settings => None,
+            PopupTab::Ports => Some("Kill every process in this list?"),
+            PopupTab::Settings => None,
         }
     }
 }
@@ -211,6 +212,52 @@ impl ContainerStats {
     }
 }
 
+/// Ports below this are the system's own services (DNS stub, CUPS); binding one needs
+/// root, so a root-owned socket above it was started by hand — a `sudo` dev server.
+pub const PRIVILEGED_PORT_MAX: u16 = 1024;
+
+/// Keep the rows that can plausibly be a dev server, drop the system's background noise.
+///
+/// Three kinds survive:
+/// - TCP owned by this user — the ordinary case (`next`, `vite`, `ng serve`, `cargo run`);
+/// - UDP owned by this user **whose process also listens on TCP** — a media/QUIC server
+///   like `livekit-server --dev` binds both, while browser mDNS chatter is UDP-only;
+/// - TCP owned by root above [`PRIVILEGED_PORT_MAX`] — a `sudo`-started server. It is
+///   shown but not killable: `ss` hides whose it is, and the signal would be denied.
+pub fn retain_dev_servers(entries: &mut Vec<PortEntry>) {
+    let tcp_pids: std::collections::HashSet<u32> = entries
+        .iter()
+        .filter(|entry| entry.protocol == "tcp")
+        .filter_map(|entry| entry.pid)
+        .collect();
+
+    entries.retain(|entry| match (entry.protocol.as_str(), entry.pid) {
+        ("tcp", Some(_)) => true,
+        ("tcp", None) => entry.port > PRIVILEGED_PORT_MAX,
+        ("udp", Some(pid)) => tcp_pids.contains(&pid),
+        _ => false,
+    });
+}
+
+/// Where a kill signal is aimed: a whole process group, or a single process.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum SignalTarget {
+    /// `kill -TERM -- -<pgid>`: takes the supervisor chain down with the listener.
+    Group(u32),
+    /// `kill -TERM -- <pid>`: used when the process group is unknown.
+    Process(u32),
+}
+
+impl SignalTarget {
+    /// Argument for `kill` (a negative number selects the process group).
+    pub fn kill_arg(self) -> String {
+        match self {
+            SignalTarget::Group(pgid) => format!("-{pgid}"),
+            SignalTarget::Process(pid) => pid.to_string(),
+        }
+    }
+}
+
 /// One listening socket from `ss -tulpn`, IPv4/IPv6 rows of the same port merged.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PortEntry {
@@ -222,6 +269,8 @@ pub struct PortEntry {
     /// Process name; absent when the socket belongs to another user (root).
     pub process: Option<String>,
     pub pid: Option<u32>,
+    /// Process group of `pid`, read from `ps` after `ss` (which does not report it).
+    pub pgid: Option<u32>,
 }
 
 impl PortEntry {
@@ -229,20 +278,35 @@ impl PortEntry {
         format!("{}/{}", self.port, self.protocol)
     }
 
-    /// Who holds the port: a container, a killable process, or an unreadable owner.
-    pub fn owner_line(&self, container: Option<&str>) -> String {
-        if let Some(container) = container {
-            return format!("Docker · {container}");
-        }
+    /// True when this row can be signalled: `ss` only reveals the PID of our own sockets.
+    pub fn is_killable(&self) -> bool {
+        self.pid.is_some()
+    }
+
+    /// Process holding the port, as `name · PID n`.
+    pub fn owner_line(&self) -> String {
         match (&self.process, self.pid) {
             (Some(process), Some(pid)) => format!("{process} · PID {pid}"),
             (None, Some(pid)) => format!("PID {pid}"),
-            _ => "PID hidden (owned by another user)".to_string(),
+            _ => "Another user (root) · needs privileges to stop".to_string(),
         }
     }
 
     pub fn address_line(&self) -> String {
         self.addresses.join(", ")
+    }
+
+    /// What a signal must be aimed at to actually free the port.
+    ///
+    /// Dev servers run under supervisor chains (`concurrently → pnpm → turbo → next`) that
+    /// respawn a killed child and re-grab the port, so the whole process group has to go.
+    /// PGID 0 and 1 are never a valid target — fall back to the bare PID.
+    pub fn signal_target(&self) -> Option<SignalTarget> {
+        let pid = self.pid?;
+        match self.pgid {
+            Some(pgid) if pgid > 1 => Some(SignalTarget::Group(pgid)),
+            _ => Some(SignalTarget::Process(pid)),
+        }
     }
 
     /// Label used in the kill confirmation prompt.

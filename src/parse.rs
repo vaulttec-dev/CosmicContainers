@@ -145,7 +145,21 @@ pub fn parse_ss_line(line: &str) -> Option<PortEntry> {
         addresses: vec![address],
         process,
         pid,
+        pgid: None,
     })
+}
+
+/// Parse `ps -o pid=,pgid=` stdout into `(pid, pgid)` pairs.
+pub fn parse_ps_pgid_output(stdout: &str) -> Vec<(u32, u32)> {
+    stdout
+        .lines()
+        .filter_map(|line| {
+            let mut columns = line.split_whitespace();
+            let pid = columns.next()?.parse().ok()?;
+            let pgid = columns.next()?.parse().ok()?;
+            Some((pid, pgid))
+        })
+        .collect()
 }
 
 /// `127.0.0.1:6379` → `(127.0.0.1, 6379)`; also handles `[::]:80` and `*:3000`.
@@ -161,7 +175,7 @@ fn parse_ss_users(users: &str) -> (Option<String>, Option<u32>) {
         .split('"')
         .nth(1)
         .filter(|name| !name.is_empty())
-        .map(str::to_string);
+        .map(clean_process_name);
     let pid = users.split_once("pid=").and_then(|(_, tail)| {
         tail.chars()
             .take_while(char::is_ascii_digit)
@@ -170,6 +184,15 @@ fn parse_ss_users(users: &str) -> (Option<String>, Option<u32>) {
             .ok()
     });
     (process, pid)
+}
+
+/// `ss` reports the kernel `comm`, capped at 15 bytes, so a process title like
+/// `next-server (v15.0.3)` arrives cut off as `next-server (v1`. Drop the mangled tail.
+fn clean_process_name(name: &str) -> String {
+    match name.split_once(" (") {
+        Some((head, _)) if !head.is_empty() => head.to_string(),
+        _ => name.to_string(),
+    }
 }
 
 /// Parse `ss` stdout, merging the IPv4/IPv6 rows of one port and sorting by port.
@@ -273,8 +296,10 @@ mod tests {
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].port, 3000);
         assert_eq!(list[0].protocol, "tcp");
-        assert_eq!(list[0].process.as_deref(), Some("next-server (v1"));
+        // The 15-byte `comm` cap cuts `next-server (v15.0.3)`; the tail is dropped.
+        assert_eq!(list[0].process.as_deref(), Some("next-server"));
         assert_eq!(list[0].pid, Some(2271194));
+        assert_eq!(list[0].owner_line(), "next-server · PID 2271194");
     }
 
     #[test]
@@ -286,8 +311,8 @@ mod tests {
         assert_eq!(list[0].addresses, vec!["0.0.0.0", "[::]"]);
         assert_eq!(list[0].pid, None);
         assert_eq!(
-            list[0].owner_line(None),
-            "PID hidden (owned by another user)"
+            list[0].owner_line(),
+            "Another user (root) · needs privileges to stop"
         );
     }
 
@@ -298,6 +323,59 @@ mod tests {
         assert_eq!(list.len(), 2);
         assert_eq!(list[0].title(), "80/tcp");
         assert_eq!(list[1].title(), "5353/udp");
+    }
+
+    #[test]
+    fn parse_ps_pgid_output_reads_pairs() {
+        let stdout = "   9411    9292\n   9356    8538\ngarbage\n";
+        let pairs = super::parse_ps_pgid_output(stdout);
+        assert_eq!(pairs, vec![(9411, 9292), (9356, 8538)]);
+    }
+
+    /// A killed listener is respawned by its supervisor, so the group is the real target.
+    #[test]
+    fn signal_target_prefers_the_process_group() {
+        use crate::types::SignalTarget;
+
+        let stdout = "tcp LISTEN 0 511 *:3000 *:* users:((\"node\",pid=9411,fd=22))\n";
+        let mut list = super::parse_ss_output(stdout);
+        assert_eq!(list[0].signal_target(), Some(SignalTarget::Process(9411)));
+
+        list[0].pgid = Some(9292);
+        assert_eq!(list[0].signal_target(), Some(SignalTarget::Group(9292)));
+        assert_eq!(list[0].signal_target().unwrap().kill_arg(), "-9292");
+
+        // PGID 1 means the parent already died and init adopted it — never signal that.
+        list[0].pgid = Some(1);
+        assert_eq!(list[0].signal_target(), Some(SignalTarget::Process(9411)));
+    }
+
+    /// Every shape of dev server survives the filter; system noise does not.
+    #[test]
+    fn retain_dev_servers_covers_every_launch_shape() {
+        let stdout = concat!(
+            // ordinary host dev server
+            "tcp LISTEN 0 511 *:3000 *:* users:((\"node\",pid=42,fd=22))\n",
+            // livekit-server --dev: TCP signalling plus its own RTC socket on UDP
+            "tcp LISTEN 0 511 *:7880 *:* users:((\"livekit-server\",pid=55,fd=8))\n",
+            "udp UNCONN 0 0 0.0.0.0:7882 0.0.0.0:* users:((\"livekit-server\",pid=55,fd=9))\n",
+            // started with sudo: root owns it, `ss` hides the pid, port is above 1024
+            "tcp LISTEN 0 511 0.0.0.0:8443 0.0.0.0:*\n",
+            // system services: root below 1024, and UDP-only browser mDNS
+            "tcp LISTEN 0 4096 127.0.0.1:631 0.0.0.0:*\n",
+            "udp UNCONN 0 0 224.0.0.251:5353 0.0.0.0:* users:((\"chrome\",pid=77,fd=9))\n",
+        );
+        let mut list = super::parse_ss_output(stdout);
+        assert_eq!(list.len(), 6);
+
+        crate::types::retain_dev_servers(&mut list);
+        let kept: Vec<String> = list.iter().map(|entry| entry.title()).collect();
+        assert_eq!(kept, vec!["3000/tcp", "7880/tcp", "7882/udp", "8443/tcp"]);
+
+        // The sudo-started row is visible but cannot be signalled.
+        let sudo_row = list.iter().find(|entry| entry.port == 8443).unwrap();
+        assert!(!sudo_row.is_killable());
+        assert_eq!(sudo_row.signal_target(), None);
     }
 
     #[test]

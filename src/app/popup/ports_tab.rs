@@ -13,30 +13,23 @@ use super::{App, Message};
 use crate::app::PendingKill;
 
 pub(super) fn ports_tab<'a>(state: &'a App) -> Element<'a, Message> {
-    if state.port_list.is_empty() && !state.loading && state.error.is_none() {
-        return empty_state("No listening ports");
+    let ports = state.dev_ports();
+    if ports.is_empty() && !state.loading && state.error.is_none() {
+        return empty_state("No dev servers listening");
     }
 
-    let total = total_pages(state.port_list.len(), LIST_PAGE_SIZE);
+    let total = total_pages(ports.len(), LIST_PAGE_SIZE);
     let page = clamp_page(state.tab_pages.ports, total);
-    let range = page_range(page, LIST_PAGE_SIZE, state.port_list.len());
+    let range = page_range(page, LIST_PAGE_SIZE, ports.len());
 
     let mut list = widget::column![].spacing(SPACING_NONE);
-    for entry in &state.port_list[range] {
-        list = list.push(port_row(
-            entry,
-            state.container_for_port(entry.port),
-            &state.pending_kill,
-        ));
+    for entry in &ports[range] {
+        list = list.push(port_row(entry, &state.pending_kill));
     }
     paginated_list(list.into(), page, total)
 }
 
-fn port_row<'a>(
-    entry: &'a PortEntry,
-    container: Option<&'a str>,
-    pending_kill: &Option<PendingKill>,
-) -> Element<'a, Message> {
+fn port_row<'a>(entry: &'a PortEntry, pending_kill: &Option<PendingKill>) -> Element<'a, Message> {
     if matches!(pending_kill, Some(pending) if Some(pending.pid) == entry.pid) {
         return kill_confirm_row(format!("Kill {}?", entry.kill_label()));
     }
@@ -44,29 +37,21 @@ fn port_row<'a>(
     list_row(
         item_labels_detail(
             entry.title(),
-            entry.owner_line(container),
+            entry.owner_line(),
             Some(entry.address_line()),
         ),
-        port_actions(entry, container),
+        port_actions(entry),
     )
 }
 
-/// A published port is freed by stopping its container; anything else by signalling the PID.
-fn port_actions<'a>(entry: &PortEntry, container: Option<&str>) -> Element<'a, Message> {
+fn port_actions<'a>(entry: &PortEntry) -> Element<'a, Message> {
     let mut actions = widget::row![].spacing(SPACING_XXS);
-    if let Some(container) = container {
-        actions = actions.push(action_svg_button(
-            action_icons::STOP,
-            Message::StopContainerPort(container.to_string()),
-            false,
-        ));
-        return actions.into();
-    }
-    if let Some(pid) = entry.pid {
+    if let (Some(pid), Some(target)) = (entry.pid, entry.signal_target()) {
         actions = actions.push(action_svg_button(
             action_icons::STOP,
             Message::RequestKill(PendingKill {
                 pid,
+                target,
                 label: entry.kill_label(),
             }),
             false,

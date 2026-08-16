@@ -12,7 +12,8 @@ use cosmic::iced::window;
 use cosmic::iced::window::Id;
 use cosmic_containers::{
     ContainerGroup, ContainerStats, ContainerSummary, ImageSummary, POLL_INTERVAL_SECS, PopupTab,
-    PortEntry, UserSettings, VolumeSummary, group_containers, running_count, settings,
+    PortEntry, SignalTarget, UserSettings, VolumeSummary, group_containers, running_count,
+    settings,
 };
 
 pub use popup::POPUP_HEIGHT;
@@ -29,7 +30,10 @@ pub enum PendingRemove {
 /// Process awaiting kill confirmation in the ports tab.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PendingKill {
+    /// Listener PID, used to match the row that shows the confirmation.
     pub pid: u32,
+    /// What the signal is aimed at — usually the whole process group.
+    pub target: SignalTarget,
     pub label: String,
 }
 
@@ -95,7 +99,6 @@ pub enum Message {
         force: bool,
     },
     CancelKill,
-    StopContainerPort(String),
     RequestPrune,
     ConfirmPrune,
     CancelPrune,
@@ -151,7 +154,7 @@ impl App {
             PopupTab::Containers => Some(self.container_row_count()),
             PopupTab::Images => Some(self.image_list.len()),
             PopupTab::Volumes => Some(self.volume_list.len()),
-            PopupTab::Ports => Some(self.port_list.len()),
+            PopupTab::Ports => Some(self.dev_ports().len()),
             PopupTab::Settings => None,
         }
     }
@@ -259,12 +262,37 @@ impl App {
     }
 
     /// Running container publishing `port`, if any (`docker-proxy` hides the real owner).
-    pub(super) fn container_for_port(&self, port: u16) -> Option<&str> {
+    fn container_for_port(&self, port: u16) -> bool {
         self.containers
             .iter()
             .filter(|container| container.is_running())
-            .find(|container| container.publishes_host_port(port))
-            .map(|container| container.name.as_str())
+            .any(|container| container.publishes_host_port(port))
+    }
+
+    /// Rows of the ports tab: this user's servers, minus anything a container publishes.
+    ///
+    /// Containers are managed from their own tab, and rootless Docker would otherwise show
+    /// every `docker-proxy` here with a kill button next to it.
+    pub(super) fn dev_ports(&self) -> Vec<&PortEntry> {
+        self.port_list
+            .iter()
+            .filter(|entry| !self.container_for_port(entry.port))
+            .collect()
+    }
+
+    /// Distinct signal targets behind the listed ports.
+    ///
+    /// Deduplicated by group, so a stack whose servers share one supervisor gets a single
+    /// signal instead of one per port.
+    pub(super) fn dev_targets(&self) -> Vec<SignalTarget> {
+        let mut targets: Vec<SignalTarget> = self
+            .dev_ports()
+            .iter()
+            .filter_map(|entry| entry.signal_target())
+            .collect();
+        targets.sort_unstable();
+        targets.dedup();
+        targets
     }
 
     pub(super) fn apply_stats(&mut self, result: Result<Vec<ContainerStats>, String>) {
